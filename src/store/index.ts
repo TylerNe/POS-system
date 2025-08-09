@@ -30,8 +30,8 @@ interface POSStore {
   createOrder: (paymentMethod: PaymentMethod, discount?: number, customerInfo?: { name?: string; phone?: string; email?: string }) => Promise<Order>;
 
   // UI State
-  currentView: 'pos' | 'products' | 'orders' | 'settings';
-  setCurrentView: (view: 'pos' | 'products' | 'orders' | 'settings') => void;
+  currentView: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings';
+  setCurrentView: (view: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings') => void;
 }
 
 const TAX_RATE = 0.1; // 10% tax
@@ -147,7 +147,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
 
   getCartSubtotal: () => {
     const state = get();
-    return state.cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+    return state.cart.reduce((total, item) => total + Number(item.product.price) * item.quantity, 0);
   },
 
   getCartTax: () => {

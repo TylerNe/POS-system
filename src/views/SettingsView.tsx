@@ -1,7 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Store, Receipt, Users } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import UserManagement from '../components/UserManagement';
+import toast from 'react-hot-toast';
+
+interface SettingsData {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  receiptHeader: string;
+  receiptFooter: string;
+  autoPrint: boolean;
+  taxRate: number;
+  taxName: string;
+  taxInclusive: boolean;
+  requireLogin: boolean;
+  trackCashier: boolean;
+}
 
 const SettingsView: React.FC = () => {
+  const { user } = useAuth();
+  const [settings, setSettings] = useState<SettingsData>({
+    storeName: 'My Store',
+    storeAddress: '123 Main Street, City, State 12345',
+    storePhone: '(555) 123-4567',
+    receiptHeader: 'Thank you for your business!',
+    receiptFooter: 'Please come again!',
+    autoPrint: true,
+    taxRate: 10,
+    taxName: 'Sales Tax',
+    taxInclusive: false,
+    requireLogin: false,
+    trackCashier: true,
+  });
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('posSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  const handleInputChange = (field: keyof SettingsData, value: string | number | boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveSettings = () => {
+    try {
+      localStorage.setItem('posSettings', JSON.stringify(settings));
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    }
+  };
   return (
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
@@ -31,7 +86,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue="My Store"
+                    value={settings.storeName}
+                    onChange={(e) => handleInputChange('storeName', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -41,7 +97,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <textarea
                     rows={3}
-                    defaultValue="123 Main Street, City, State 12345"
+                    value={settings.storeAddress}
+                    onChange={(e) => handleInputChange('storeAddress', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -51,7 +108,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <input
                     type="tel"
-                    defaultValue="(555) 123-4567"
+                    value={settings.storePhone}
+                    onChange={(e) => handleInputChange('storePhone', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -77,7 +135,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue="Thank you for your business!"
+                    value={settings.receiptHeader}
+                    onChange={(e) => handleInputChange('receiptHeader', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -87,7 +146,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue="Please come again!"
+                    value={settings.receiptFooter}
+                    onChange={(e) => handleInputChange('receiptFooter', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -96,7 +156,8 @@ const SettingsView: React.FC = () => {
                     id="auto-print"
                     name="auto-print"
                     type="checkbox"
-                    defaultChecked
+                    checked={settings.autoPrint}
+                    onChange={(e) => handleInputChange('autoPrint', e.target.checked)}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <label htmlFor="auto-print" className="ml-2 block text-sm text-gray-900">
@@ -128,7 +189,8 @@ const SettingsView: React.FC = () => {
                     min="0"
                     max="100"
                     step="0.01"
-                    defaultValue="10"
+                    value={settings.taxRate}
+                    onChange={(e) => handleInputChange('taxRate', parseFloat(e.target.value) || 0)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -138,7 +200,8 @@ const SettingsView: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue="Sales Tax"
+                    value={settings.taxName}
+                    onChange={(e) => handleInputChange('taxName', e.target.value)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
@@ -147,6 +210,8 @@ const SettingsView: React.FC = () => {
                     id="tax-inclusive"
                     name="tax-inclusive"
                     type="checkbox"
+                    checked={settings.taxInclusive}
+                    onChange={(e) => handleInputChange('taxInclusive', e.target.checked)}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <label htmlFor="tax-inclusive" className="ml-2 block text-sm text-gray-900">
@@ -158,44 +223,46 @@ const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* User Management */}
+        {/* Current User Info */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex items-center">
               <Users className="h-8 w-8 text-primary-600" />
               <h3 className="ml-3 text-lg leading-6 font-medium text-gray-900">
-                User Management
+                Current Session
               </h3>
             </div>
             <div className="mt-5">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Current Cashier
+                    Current User
                   </label>
                   <input
                     type="text"
-                    defaultValue="Admin User"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    value={user?.username || 'Current User'}
+                    disabled
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-600 sm:text-sm"
                   />
                 </div>
-                <div className="flex items-center">
-                  <input
-                    id="require-login"
-                    name="require-login"
-                    type="checkbox"
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="require-login" className="ml-2 block text-sm text-gray-900">
-                    Require login for POS access
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Role
                   </label>
+                  <input
+                    type="text"
+                    value={user?.role || 'Unknown'}
+                    disabled
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-600 sm:text-sm"
+                  />
                 </div>
                 <div className="flex items-center">
                   <input
                     id="track-cashier"
                     name="track-cashier"
                     type="checkbox"
-                    defaultChecked
+                    checked={settings.trackCashier}
+                    onChange={(e) => handleInputChange('trackCashier', e.target.checked)}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <label htmlFor="track-cashier" className="ml-2 block text-sm text-gray-900">
@@ -206,14 +273,21 @@ const SettingsView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* User Management - Only for Admin */}
+        {user?.role === 'admin' && (
+          <UserManagement />
+        )}
       </div>
 
       {/* Save Button */}
       <div className="mt-6">
         <button
           type="button"
-          className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
+          onClick={handleSaveSettings}
+          className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 flex items-center"
         >
+          <Settings className="h-4 w-4 mr-2" />
           Save Settings
         </button>
       </div>

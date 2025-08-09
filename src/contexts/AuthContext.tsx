@@ -11,6 +11,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -29,6 +30,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token && savedUser) {
         try {
+          setToken(token);
           setUser(JSON.parse(savedUser));
           // Verify token is still valid
           await authAPI.getProfile();
@@ -47,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user');
           setUser(null);
+          setToken(null);
         }
       }
       setLoading(false);
@@ -62,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      setToken(token);
       setUser(user);
       toast.success('Login successful!');
     } catch (error: any) {
@@ -78,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      setToken(token);
       setUser(user);
       toast.success('Registration successful!');
     } catch (error: any) {
@@ -90,12 +96,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    setToken(null);
     setUser(null);
     toast.success('Logged out successfully');
   };
 
   const value = {
     user,
+    token,
     loading,
     login,
     logout,

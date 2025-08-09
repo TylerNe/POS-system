@@ -5,7 +5,7 @@ import { Plus, Package } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
-  variant?: 'pos' | 'manage';
+  variant?: 'pos' | 'manage' | 'display';
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
 }
@@ -43,7 +43,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <p className="text-sm text-gray-500">{product.category}</p>
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-primary-600">
-            ${product.price.toFixed(2)}
+            ${Number(product.price).toFixed(2)}
           </span>
           <span className={`text-sm px-2 py-1 rounded-full ${
             product.stock > 10 

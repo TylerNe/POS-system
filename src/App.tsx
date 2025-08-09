@@ -4,7 +4,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { usePOSStore } from './store';
 import Layout from './components/Layout';
 import Login from './components/Login';
+import ErrorBoundary from './components/ErrorBoundary';
 import POSView from './views/POSView';
+import DashboardView from './views/DashboardView';
 import ProductsView from './views/ProductsView';
 import OrdersView from './views/OrdersView';
 import SettingsView from './views/SettingsView';
@@ -29,24 +31,33 @@ const AppContent: FC = () => {
   }
 
   const renderCurrentView = () => {
+    // Restrict cashier access to only POS and Orders
+    if (user?.role === 'cashier' && (currentView === 'products' || currentView === 'settings' || currentView === 'dashboard')) {
+      return <POSView />;
+    }
+
     switch (currentView) {
       case 'pos':
         return <POSView />;
+      case 'dashboard':
+        return user?.role === 'admin' ? <DashboardView /> : <POSView />;
       case 'products':
-        return <ProductsView />;
+        return user?.role === 'admin' ? <ProductsView /> : <POSView />;
       case 'orders':
         return <OrdersView />;
       case 'settings':
-        return <SettingsView />;
+        return user?.role === 'admin' ? <SettingsView /> : <POSView />;
       default:
         return <POSView />;
     }
   };
 
   return (
-    <Layout>
-      {renderCurrentView()}
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        {renderCurrentView()}
+      </Layout>
+    </ErrorBoundary>
   );
 };
 

@@ -128,6 +128,65 @@ export const ordersAPI = {
   },
 };
 
+// Analytics API (Admin only)
+export const analyticsAPI = {
+  getDailySales: async (params?: { days?: number }) => {
+    const response = await api.get('/orders/analytics/daily', { params });
+    return response.data;
+  },
+
+  getMonthlySales: async (params?: { months?: number }) => {
+    const response = await api.get('/orders/analytics/monthly', { params });
+    return response.data;
+  },
+
+  getYearlySales: async () => {
+    const response = await api.get('/orders/analytics/yearly');
+    return response.data;
+  },
+
+  getTopProducts: async (params?: { limit?: number; period?: string }) => {
+    const response = await api.get('/orders/analytics/top-products', { params });
+    return response.data;
+  },
+};
+
+// Users API (Admin only)
+export const usersAPI = {
+  getAll: async (params?: {
+    limit?: number;
+    offset?: number;
+  }) => {
+    const response = await api.get('/auth/users', { params });
+    return response.data;
+  },
+
+  create: async (userData: {
+    username: string;
+    email: string;
+    password: string;
+    role: 'admin' | 'cashier';
+  }) => {
+    const response = await api.post('/auth/users', userData);
+    return response.data;
+  },
+
+  update: async (id: string, userData: {
+    username: string;
+    email: string;
+    role: 'admin' | 'cashier';
+    password?: string;
+  }) => {
+    const response = await api.put(`/auth/users/${id}`, userData);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    const response = await api.delete(`/auth/users/${id}`);
+    return response.data;
+  },
+};
+
 // Health check
 export const healthAPI = {
   check: async () => {

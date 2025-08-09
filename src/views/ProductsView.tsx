@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePOSStore } from '../store';
+import { useAuth } from '../contexts/AuthContext';
 import ProductCard from '../components/ProductCard';
 import { Plus, Search, X } from 'lucide-react';
 import type { Product } from '../types';
 import toast from 'react-hot-toast';
 
 const ProductsView: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct } = usePOSStore();
+  const { products, addProduct, updateProduct, deleteProduct, fetchProducts, productsLoading } = usePOSStore();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -43,15 +49,17 @@ const ProductsView: React.FC = () => {
             Manage your inventory and product catalog
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={handleAddNew}
-            className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 flex items-center"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </button>
-        </div>
+        {user?.role === 'admin' && (
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <button
+              onClick={handleAddNew}
+              className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-6">
@@ -70,17 +78,32 @@ const ProductsView: React.FC = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              variant="manage"
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        {productsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md p-4 animate-pulse">
+                <div className="h-32 bg-gray-200 rounded-lg mb-3"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                variant={user?.role === 'admin' ? "manage" : "display"}
+                onEdit={user?.role === 'admin' ? handleEdit : undefined}
+                onDelete={user?.role === 'admin' ? handleDelete : undefined}
+              />
+            ))}
+          </div>
+        )}
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-12">

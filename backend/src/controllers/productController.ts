@@ -46,8 +46,14 @@ export const getAllProducts = async (req: Request, res: Response) => {
     const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
 
+    // Convert price to number for frontend
+    const products = result.rows.map(product => ({
+      ...product,
+      price: parseFloat(product.price)
+    }));
+
     res.json({
-      products: result.rows,
+      products,
       pagination: {
         total,
         limit: parseInt(limit as string),
@@ -71,7 +77,13 @@ export const getProductById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    res.json({ product: result.rows[0] });
+    // Convert price to number for frontend
+    const product = {
+      ...result.rows[0],
+      price: parseFloat(result.rows[0].price)
+    };
+
+    res.json({ product });
   } catch (error) {
     console.error('Get product error:', error);
     res.status(500).json({ error: 'Internal server error' });

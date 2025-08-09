@@ -16,9 +16,9 @@ router.get('/', getAllProducts);
 router.get('/categories', getCategories);
 router.get('/:id', getProductById);
 
-// Protected routes (require authentication)
-router.post('/', authenticateToken, requireRole(['admin', 'cashier']), createProduct);
-router.put('/:id', authenticateToken, requireRole(['admin', 'cashier']), updateProduct);
+// Protected routes (require authentication) - Only admin can manage products
+router.post('/', authenticateToken, requireRole(['admin']), createProduct);
+router.put('/:id', authenticateToken, requireRole(['admin']), updateProduct);
 router.delete('/:id', authenticateToken, requireRole(['admin']), deleteProduct);
 
 export default router;

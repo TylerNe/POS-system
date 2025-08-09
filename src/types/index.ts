@@ -6,6 +6,8 @@ export interface Product {
   stock: number;
   image?: string;
   barcode?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CartItem {
@@ -13,16 +15,32 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface OrderItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  product: Product;
+}
+
 export interface Order {
   id: string;
-  items: CartItem[];
+  items: OrderItem[];
   total: number;
   subtotal: number;
   tax: number;
   discount: number;
   paymentMethod: PaymentMethod;
-  timestamp: Date;
-  customerInfo?: CustomerInfo;
+  timestamp: string | Date;
+  createdAt?: string;
+  updatedAt?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  cashier_name?: string;
+  user_id?: string;
 }
 
 export interface CustomerInfo {
@@ -32,6 +50,15 @@ export interface CustomerInfo {
 }
 
 export type PaymentMethod = 'cash' | 'card' | 'digital';
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'cashier';
+  created_at: string;
+  updated_at?: string;
+}
 
 export interface Receipt {
   order: Order;

@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePOSStore } from '../store';
 import { format } from 'date-fns';
 import { Search, Eye, Receipt, Calendar } from 'lucide-react';
 import type { Order } from '../types';
 
 const OrdersView: React.FC = () => {
-  const { orders } = usePOSStore();
+  const { orders, fetchOrders, ordersLoading } = usePOSStore();
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Filter orders
   const filteredOrders = orders.filter(order =>
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())
+    (order.paymentMethod && order.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Sort orders by timestamp (newest first)
@@ -20,7 +24,9 @@ const OrdersView: React.FC = () => {
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  const getPaymentMethodColor = (method: string) => {
+  const getPaymentMethodColor = (method: string | undefined) => {
+    if (!method) return 'bg-gray-100 text-gray-800';
+    
     switch (method) {
       case 'cash': return 'bg-green-100 text-green-800';
       case 'card': return 'bg-blue-100 text-blue-800';
@@ -56,9 +62,29 @@ const OrdersView: React.FC = () => {
         </div>
 
         {/* Orders Table */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {sortedOrders.map((order) => (
+        {ordersLoading ? (
+          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul className="divide-y divide-gray-200">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <li key={index} className="px-4 py-4 sm:px-6 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                        <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      </div>
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul className="divide-y divide-gray-200">
+              {sortedOrders.map((order) => (
               <li key={order.id}>
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
@@ -72,19 +98,24 @@ const OrdersView: React.FC = () => {
                             Order #{order.id.slice(-8).toUpperCase()}
                           </p>
                           <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentMethodColor(order.paymentMethod)}`}>
-                            {order.paymentMethod.charAt(0).toUpperCase() + order.paymentMethod.slice(1)}
+                            {order.paymentMethod ? order.paymentMethod.charAt(0).toUpperCase() + order.paymentMethod.slice(1) : 'N/A'}
                           </span>
                         </div>
                         <div className="mt-1 flex items-center text-sm text-gray-500">
                           <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4" />
                           {format(new Date(order.timestamp), 'MMM dd, yyyy HH:mm')}
+                          {order.cashier_name && (
+                            <span className="ml-3 text-xs text-gray-400">
+                              by {order.cashier_name}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <div className="text-right mr-4">
                         <p className="text-sm font-medium text-gray-900">
-                          ${order.total.toFixed(2)}
+                          ${Number(order.total).toFixed(2)}
                         </p>
                         <p className="text-sm text-gray-500">
                           {order.items.length} item{order.items.length !== 1 ? 's' : ''}
@@ -101,11 +132,12 @@ const OrdersView: React.FC = () => {
                   </div>
                 </div>
               </li>
-            ))}
-          </ul>
-        </div>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        {sortedOrders.length === 0 && (
+        {!ordersLoading && sortedOrders.length === 0 && (
           <div className="text-center py-12">
             <Receipt className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
@@ -172,8 +204,12 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
                   order.paymentMethod === 'card' ? 'bg-blue-100 text-blue-800' :
                   'bg-purple-100 text-purple-800'
                 }`}>
-                  {order.paymentMethod.charAt(0).toUpperCase() + order.paymentMethod.slice(1)}
+                  {order.paymentMethod ? order.paymentMethod.charAt(0).toUpperCase() + order.paymentMethod.slice(1) : 'N/A'}
                 </span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Cashier</p>
+                <p className="text-sm text-gray-900">{order.cashier_name || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -185,13 +221,13 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
               {order.items.map((item, index) => (
                 <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
                   <div>
-                    <p className="font-medium">{item.product.name}</p>
+                    <p className="font-medium">{item.product?.name || item.product_name}</p>
                     <p className="text-sm text-gray-500">
-                      ${item.product.price.toFixed(2)} × {item.quantity}
+                      ${Number(item.unit_price || item.product?.price || 0).toFixed(2)} × {item.quantity}
                     </p>
                   </div>
                   <p className="font-medium">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    ${Number(item.total_price || (item.unit_price || 0) * item.quantity).toFixed(2)}
                   </p>
                 </div>
               ))}
@@ -203,21 +239,21 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>${Number(order.subtotal).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax:</span>
-                <span>${order.tax.toFixed(2)}</span>
+                <span>${Number(order.tax).toFixed(2)}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount:</span>
-                  <span>-${order.discount.toFixed(2)}</span>
+                  <span>-${Number(order.discount).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-semibold pt-2 border-t">
                 <span>Total:</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>${Number(order.total).toFixed(2)}</span>
               </div>
             </div>
           </div>

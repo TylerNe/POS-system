@@ -71,8 +71,35 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response) => 
     const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
 
+    // Convert snake_case to camelCase and parse numeric fields for frontend
+    const orders = result.rows.map(order => ({
+      ...order,
+      subtotal: parseFloat(order.subtotal),
+      tax: parseFloat(order.tax),
+      discount: parseFloat(order.discount),
+      total: parseFloat(order.total),
+      paymentMethod: order.payment_method,
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+      customerEmail: order.customer_email,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      timestamp: order.created_at, // For compatibility
+      items: Array.isArray(order.items) ? order.items.map((item: any) => ({
+        ...item,
+        quantity: parseInt(item.quantity || '0'),
+        unit_price: parseFloat(item.unit_price || '0'),
+        total_price: parseFloat(item.total_price || '0'),
+        product: {
+          id: item.product_id,
+          name: item.product_name,
+          price: parseFloat(item.unit_price || '0')
+        }
+      })) : []
+    }));
+
     res.json({
-      orders: result.rows,
+      orders,
       pagination: {
         total,
         limit: parseInt(limit as string),
@@ -118,9 +145,26 @@ export const getOrderById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    // Convert snake_case to camelCase and parse numeric fields for frontend
     const order = {
       ...orderResult.rows[0],
-      items: itemsResult.rows
+      subtotal: parseFloat(orderResult.rows[0].subtotal),
+      tax: parseFloat(orderResult.rows[0].tax),
+      discount: parseFloat(orderResult.rows[0].discount),
+      total: parseFloat(orderResult.rows[0].total),
+      paymentMethod: orderResult.rows[0].payment_method,
+      customerName: orderResult.rows[0].customer_name,
+      customerPhone: orderResult.rows[0].customer_phone,
+      customerEmail: orderResult.rows[0].customer_email,
+      createdAt: orderResult.rows[0].created_at,
+      updatedAt: orderResult.rows[0].updated_at,
+      timestamp: orderResult.rows[0].created_at, // For compatibility
+      items: itemsResult.rows.map(item => ({
+        ...item,
+        quantity: parseInt(item.quantity),
+        unit_price: parseFloat(item.unit_price),
+        total_price: parseFloat(item.total_price)
+      }))
     };
 
     res.json({ order });
@@ -235,9 +279,26 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       GROUP BY o.id, u.username
     `, [order.id]);
 
+    // Convert snake_case to camelCase and parse numeric fields for frontend
+    const orderData = completeOrderResult.rows[0];
+    const orderResponse = {
+      ...orderData,
+      subtotal: parseFloat(orderData.subtotal),
+      tax: parseFloat(orderData.tax),
+      discount: parseFloat(orderData.discount),
+      total: parseFloat(orderData.total),
+      paymentMethod: orderData.payment_method,
+      customerName: orderData.customer_name,
+      customerPhone: orderData.customer_phone,
+      customerEmail: orderData.customer_email,
+      createdAt: orderData.created_at,
+      updatedAt: orderData.updated_at,
+      timestamp: orderData.created_at // For compatibility
+    };
+
     res.status(201).json({
       message: 'Order created successfully',
-      order: completeOrderResult.rows[0]
+      order: orderResponse
     });
 
   } catch (error) {
@@ -284,6 +345,180 @@ export const getOrderStats = async (req: Request, res: Response) => {
     res.json({ stats: result.rows[0] });
   } catch (error) {
     console.error('Get order stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Daily sales analytics
+export const getDailySales = async (req: Request, res: Response) => {
+  try {
+    const { days = '30' } = req.query; // Default last 30 days
+    
+    const query = `
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as orders_count,
+        SUM(total) as revenue,
+        AVG(total) as avg_order_value,
+        SUM(CASE WHEN payment_method = 'cash' THEN total ELSE 0 END) as cash_revenue,
+        SUM(CASE WHEN payment_method = 'card' THEN total ELSE 0 END) as card_revenue,
+        SUM(CASE WHEN payment_method = 'digital' THEN total ELSE 0 END) as digital_revenue
+      FROM orders 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '${parseInt(days as string)} days'
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) DESC
+    `;
+
+    const result = await pool.query(query);
+
+    res.json({
+      daily_sales: result.rows.map(row => ({
+        ...row,
+        revenue: parseFloat(row.revenue || '0'),
+        avg_order_value: parseFloat(row.avg_order_value || '0'),
+        cash_revenue: parseFloat(row.cash_revenue || '0'),
+        card_revenue: parseFloat(row.card_revenue || '0'),
+        digital_revenue: parseFloat(row.digital_revenue || '0'),
+        orders_count: parseInt(row.orders_count || '0')
+      }))
+    });
+  } catch (error) {
+    console.error('Get daily sales error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Monthly sales analytics
+export const getMonthlySales = async (req: Request, res: Response) => {
+  try {
+    const { months = '12' } = req.query; // Default last 12 months
+    
+    const query = `
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        EXTRACT(YEAR FROM created_at) as year,
+        EXTRACT(MONTH FROM created_at) as month_num,
+        COUNT(*) as orders_count,
+        SUM(total) as revenue,
+        AVG(total) as avg_order_value,
+        SUM(CASE WHEN payment_method = 'cash' THEN total ELSE 0 END) as cash_revenue,
+        SUM(CASE WHEN payment_method = 'card' THEN total ELSE 0 END) as card_revenue,
+        SUM(CASE WHEN payment_method = 'digital' THEN total ELSE 0 END) as digital_revenue
+      FROM orders 
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${parseInt(months as string)} months'
+      GROUP BY DATE_TRUNC('month', created_at), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+      ORDER BY month DESC
+    `;
+
+    const result = await pool.query(query);
+
+    res.json({
+      monthly_sales: result.rows.map(row => ({
+        ...row,
+        revenue: parseFloat(row.revenue || '0'),
+        avg_order_value: parseFloat(row.avg_order_value || '0'),
+        cash_revenue: parseFloat(row.cash_revenue || '0'),
+        card_revenue: parseFloat(row.card_revenue || '0'),
+        digital_revenue: parseFloat(row.digital_revenue || '0'),
+        orders_count: parseInt(row.orders_count || '0')
+      }))
+    });
+  } catch (error) {
+    console.error('Get monthly sales error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Yearly sales analytics
+export const getYearlySales = async (req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT 
+        EXTRACT(YEAR FROM created_at) as year,
+        COUNT(*) as orders_count,
+        SUM(total) as revenue,
+        AVG(total) as avg_order_value,
+        SUM(CASE WHEN payment_method = 'cash' THEN total ELSE 0 END) as cash_revenue,
+        SUM(CASE WHEN payment_method = 'card' THEN total ELSE 0 END) as card_revenue,
+        SUM(CASE WHEN payment_method = 'digital' THEN total ELSE 0 END) as digital_revenue
+      FROM orders 
+      GROUP BY EXTRACT(YEAR FROM created_at)
+      ORDER BY year DESC
+    `;
+
+    const result = await pool.query(query);
+
+    res.json({
+      yearly_sales: result.rows.map(row => ({
+        ...row,
+        revenue: parseFloat(row.revenue || '0'),
+        avg_order_value: parseFloat(row.avg_order_value || '0'),
+        cash_revenue: parseFloat(row.cash_revenue || '0'),
+        card_revenue: parseFloat(row.card_revenue || '0'),
+        digital_revenue: parseFloat(row.digital_revenue || '0'),
+        orders_count: parseInt(row.orders_count || '0')
+      }))
+    });
+  } catch (error) {
+    console.error('Get yearly sales error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Top selling products
+export const getTopProducts = async (req: Request, res: Response) => {
+  try {
+    const { limit = '10', period = 'month' } = req.query;
+    
+    let dateFilter = '';
+    switch (period) {
+      case 'day':
+        dateFilter = "AND o.created_at >= CURRENT_DATE";
+        break;
+      case 'week':
+        dateFilter = "AND o.created_at >= CURRENT_DATE - INTERVAL '7 days'";
+        break;
+      case 'month':
+        dateFilter = "AND o.created_at >= CURRENT_DATE - INTERVAL '30 days'";
+        break;
+      case 'year':
+        dateFilter = "AND o.created_at >= CURRENT_DATE - INTERVAL '1 year'";
+        break;
+    }
+
+    const query = `
+      SELECT 
+        p.id,
+        p.name,
+        p.category,
+        p.price,
+        SUM(oi.quantity) as total_sold,
+        SUM(oi.total_price) as total_revenue,
+        COUNT(DISTINCT o.id) as orders_count
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.id
+      JOIN orders o ON oi.order_id = o.id
+      WHERE 1=1 ${dateFilter}
+      GROUP BY p.id, p.name, p.category, p.price
+      ORDER BY total_sold DESC
+      LIMIT $1
+    `;
+
+    const result = await pool.query(query, [parseInt(limit as string)]);
+
+    res.json({
+      top_products: result.rows.map(row => ({
+        ...row,
+        price: parseFloat(row.price || '0'),
+        total_revenue: parseFloat(row.total_revenue || '0'),
+        total_sold: parseInt(row.total_sold || '0'),
+        orders_count: parseInt(row.orders_count || '0')
+      })),
+      period,
+      limit: parseInt(limit as string)
+    });
+  } catch (error) {
+    console.error('Get top products error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
