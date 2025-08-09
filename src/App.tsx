@@ -1,0 +1,81 @@
+import { type FC } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { usePOSStore } from './store';
+import Layout from './components/Layout';
+import Login from './components/Login';
+import POSView from './views/POSView';
+import ProductsView from './views/ProductsView';
+import OrdersView from './views/OrdersView';
+import SettingsView from './views/SettingsView';
+
+const AppContent: FC = () => {
+  const { user, loading } = useAuth();
+  const { currentView } = usePOSStore();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-center">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'pos':
+        return <POSView />;
+      case 'products':
+        return <ProductsView />;
+      case 'orders':
+        return <OrdersView />;
+      case 'settings':
+        return <SettingsView />;
+      default:
+        return <POSView />;
+    }
+  };
+
+  return (
+    <Layout>
+      {renderCurrentView()}
+    </Layout>
+  );
+};
+
+const App: FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            style: {
+              background: '#10b981',
+            },
+          },
+          error: {
+            style: {
+              background: '#ef4444',
+            },
+          },
+        }}
+      />
+    </AuthProvider>
+  );
+};
+
+export default App;
