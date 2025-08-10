@@ -183,23 +183,37 @@ export const usePOSStore = create<POSStore>((set, get) => ({
     }
 
     try {
+      // Map vietqr to digital for backend compatibility
+      const backendPaymentMethod = paymentMethod === 'vietqr' ? 'digital' : paymentMethod;
+      const originalPaymentMethod = paymentMethod; // Store original for display
+      
       const orderData = {
         items: cart.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity
         })),
-        payment_method: paymentMethod,
+        payment_method: backendPaymentMethod,
         discount,
         customer_name: customerInfo?.name,
         customer_phone: customerInfo?.phone,
         customer_email: customerInfo?.email,
+        // Add metadata to preserve original payment method
+        metadata: {
+          original_payment_method: originalPaymentMethod
+        }
       };
 
       const response = await ordersAPI.create(orderData);
       
+      // Create order with original payment method for display
+      const orderWithOriginalMethod = {
+        ...response.order,
+        paymentMethod: originalPaymentMethod // Use original method for display
+      };
+      
       // Update orders list
       set((currentState) => ({
-        orders: [response.order, ...currentState.orders],
+        orders: [orderWithOriginalMethod, ...currentState.orders],
         cart: [],
       }));
 
@@ -207,7 +221,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
       get().fetchProducts();
 
       toast.success('Order created successfully');
-      return response.order;
+      return orderWithOriginalMethod; // Return the order with original payment method
     } catch (error: any) {
       console.error('Failed to create order:', error);
       toast.error(error.response?.data?.error || 'Failed to create order');

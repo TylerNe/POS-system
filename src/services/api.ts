@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { Product, PaymentMethod } from '../types';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 // Create axios instance
 const api = axios.create({
@@ -183,6 +182,76 @@ export const usersAPI = {
 
   delete: async (id: string) => {
     const response = await api.delete(`/auth/users/${id}`);
+    return response.data;
+  },
+};
+
+// VietQR Settings API
+export const vietQRAPI = {
+  getSettings: async () => {
+    const response = await api.get('/vietqr/settings');
+    return response.data;
+  },
+
+  saveSettings: async (settings: {
+    bankAccounts: Array<{
+      accountNumber: string;
+      accountName: string;
+      bankCode: string;
+      bankName: string;
+      isActive: boolean;
+    }>;
+    defaultBankCode: string;
+    qrCodeSize: number;
+    autoRefresh: boolean;
+    timeoutMinutes: number;
+  }) => {
+    const response = await api.post('/vietqr/settings', settings);
+    return response.data;
+  },
+
+  updateSettings: async (settings: {
+    bankAccounts: Array<{
+      accountNumber: string;
+      accountName: string;
+      bankCode: string;
+      bankName: string;
+      isActive: boolean;
+    }>;
+    defaultBankCode: string;
+    qrCodeSize: number;
+    autoRefresh: boolean;
+    timeoutMinutes: number;
+  }) => {
+    const response = await api.put('/vietqr/settings', settings);
+    return response.data;
+  },
+};
+
+// Settings API
+export const settingsAPI = {
+  getSettings: async () => {
+    const response = await api.get('/settings');
+    return response.data;
+  },
+  updateSettings: async (key: string, value: any) => {
+    const response = await api.put('/settings', { key, value });
+    return response.data;
+  },
+  getCurrency: async () => {
+    const response = await api.get('/settings/currency');
+    return response.data;
+  },
+  updateCurrency: async (currency: { code: string; symbol: string; name: string }) => {
+    const response = await api.put('/settings/currency', currency);
+    return response.data;
+  },
+  getLanguage: async () => {
+    const response = await api.get('/settings/language');
+    return response.data;
+  },
+  updateLanguage: async (language: { code: string; name: string }) => {
+    const response = await api.put('/settings/language', language);
     return response.data;
   },
 };

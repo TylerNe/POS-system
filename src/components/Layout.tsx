@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePOSStore } from '../store';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { ShoppingCart, Package, FileText, Settings, LogOut, User, BarChart3 } from 'lucide-react';
 
 interface LayoutProps {
@@ -10,13 +11,14 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentView, setCurrentView } = usePOSStore();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
-    { id: 'pos', label: 'POS', icon: ShoppingCart, adminOnly: false },
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, adminOnly: true },
-    { id: 'products', label: 'Products', icon: Package, adminOnly: true },
-    { id: 'orders', label: 'Orders', icon: FileText, adminOnly: false },
-    { id: 'settings', label: 'Settings', icon: Settings, adminOnly: true },
+    { id: 'pos', label: t('navigation.pos'), icon: ShoppingCart, adminOnly: false },
+    { id: 'dashboard', label: t('navigation.dashboard'), icon: BarChart3, adminOnly: true },
+    { id: 'products', label: t('navigation.products'), icon: Package, adminOnly: true },
+    { id: 'orders', label: t('navigation.orders'), icon: FileText, adminOnly: false },
+    { id: 'settings', label: t('navigation.settings'), icon: Settings, adminOnly: true },
   ] as const;
 
   return (
@@ -67,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="flex items-center text-sm text-gray-600 hover:text-gray-800"
                 >
                   <LogOut className="h-4 w-4 mr-1" />
-                  Logout
+                  {t('auth.logout')}
                 </button>
               </div>
             </div>

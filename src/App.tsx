@@ -1,6 +1,8 @@
 import { type FC } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { usePOSStore } from './store';
 import Layout from './components/Layout';
 import Login from './components/Login';
@@ -14,6 +16,9 @@ import SettingsView from './views/SettingsView';
 const AppContent: FC = () => {
   const { user, loading } = useAuth();
   const { currentView } = usePOSStore();
+
+  // Debug: Log current state
+  console.log('App state:', { user, loading, currentView });
 
   if (loading) {
     return (
@@ -64,27 +69,31 @@ const AppContent: FC = () => {
 const App: FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            style: {
-              background: '#10b981',
-            },
-          },
-          error: {
-            style: {
-              background: '#ef4444',
-            },
-          },
-        }}
-      />
+      <LanguageProvider>
+        <CurrencyProvider>
+          <AppContent />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                style: {
+                  background: '#10b981',
+                },
+              },
+              error: {
+                style: {
+                  background: '#ef4444',
+                },
+              },
+            }}
+          />
+        </CurrencyProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 };

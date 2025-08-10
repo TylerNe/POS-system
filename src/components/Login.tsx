@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { LogIn, User, Lock } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -36,10 +38,10 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            POS System Login
+            {t('auth.posSystemLogin')}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account to access the POS system
+            {t('auth.signInToAccount')}
           </p>
         </div>
 
@@ -47,7 +49,7 @@ const Login: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
+                {t('auth.username')}
               </label>
               <div className="mt-1 relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -59,14 +61,14 @@ const Login: React.FC = () => {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="pl-10 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter your username"
+                  placeholder={t('auth.enterUsername')}
                 />
               </div>
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                {t('auth.password')}
               </label>
               <div className="mt-1 relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -78,7 +80,7 @@ const Login: React.FC = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter your password"
+                  placeholder={t('auth.enterPassword')}
                 />
               </div>
             </div>
@@ -95,7 +97,7 @@ const Login: React.FC = () => {
               ) : (
                 <>
                   <LogIn className="h-4 w-4 mr-2" />
-                  Sign In
+                  {t('auth.signIn')}
                 </>
               )}
             </button>
@@ -104,7 +106,7 @@ const Login: React.FC = () => {
           {/* Quick Login Buttons for Demo */}
           <div className="mt-6">
             <div className="text-sm text-center text-gray-600 mb-4">
-              Quick login for demo:
+              {t('auth.quickLoginDemo')}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -112,14 +114,14 @@ const Login: React.FC = () => {
                 onClick={() => handleQuickLogin('admin')}
                 className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                Admin
+                {t('auth.admin')}
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickLogin('cashier')}
                 className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                Cashier
+                {t('auth.cashier')}
               </button>
             </div>
           </div>

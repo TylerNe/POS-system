@@ -85,6 +85,7 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response) => 
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       timestamp: order.created_at, // For compatibility
+      metadata: order.metadata || {},
       items: Array.isArray(order.items) ? order.items.map((item: any) => ({
         ...item,
         quantity: parseInt(item.quantity || '0'),
@@ -180,7 +181,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
   try {
     await client.query('BEGIN');
 
-    const { items, payment_method, discount = 0, customer_name, customer_phone, customer_email }: CreateOrderRequest = req.body;
+    const { items, payment_method, discount = 0, customer_name, customer_phone, customer_email, metadata }: CreateOrderRequest = req.body;
     const userId = req.user!.id;
 
     // Validation
@@ -239,9 +240,9 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
 
     // Create order
     const orderResult = await client.query(
-      `INSERT INTO orders (subtotal, tax, discount, total, payment_method, user_id, customer_name, customer_phone, customer_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [subtotal, tax, discount, total, payment_method, userId, customer_name || null, customer_phone || null, customer_email || null]
+      `INSERT INTO orders (subtotal, tax, discount, total, payment_method, user_id, customer_name, customer_phone, customer_email, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [subtotal, tax, discount, total, payment_method, userId, customer_name || null, customer_phone || null, customer_email || null, metadata || {}]
     );
 
     const order = orderResult.rows[0];
@@ -293,7 +294,8 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       customerEmail: orderData.customer_email,
       createdAt: orderData.created_at,
       updatedAt: orderData.updated_at,
-      timestamp: orderData.created_at // For compatibility
+      timestamp: orderData.created_at, // For compatibility
+      metadata: orderData.metadata || {}
     };
 
     res.status(201).json({

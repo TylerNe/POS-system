@@ -49,7 +49,7 @@ export interface CustomerInfo {
   email?: string;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'digital';
+export type PaymentMethod = 'cash' | 'card' | 'digital' | 'vietqr';
 
 export interface User {
   id: string;

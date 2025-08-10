@@ -1,14 +1,16 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
+import corsMiddleware from './config/cors';
 
 // Import routes
 import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import authRoutes from './routes/auth';
+import vietQRRoutes from './routes/vietqr';
+import settingsRoutes from './routes/settings';
 
 // Load environment variables
 dotenv.config();
@@ -18,19 +20,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
-    : [
-        'http://localhost:5173', 
-        'http://localhost:5174', 
-        'http://localhost:5175', 
-        'http://localhost:5176', 
-        'http://localhost:3000',
-        'file://' // For debug HTML files
-      ],
-  credentials: true
-}));
+app.use(corsMiddleware);
 app.use(morgan('combined'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -51,6 +41,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/vietqr', vietQRRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

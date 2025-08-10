@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePOSStore } from '../store';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import ProductCard from '../components/ProductCard';
 import { Plus, Search, X } from 'lucide-react';
 import type { Product } from '../types';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 const ProductsView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, fetchProducts, productsLoading } = usePOSStore();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchProducts();
@@ -31,7 +33,7 @@ const ProductsView: React.FC = () => {
   const handleDelete = (product: Product) => {
     if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
       deleteProduct(product.id);
-      toast.success('Product deleted successfully');
+      toast.success(t('products.productDeleted'));
     }
   };
 
@@ -120,10 +122,10 @@ const ProductsView: React.FC = () => {
           onSave={(productData) => {
             if (editingProduct) {
               updateProduct(editingProduct.id, productData);
-              toast.success('Product updated successfully');
+              toast.success(t('products.productUpdated'));
             } else {
               addProduct(productData);
-              toast.success('Product added successfully');
+              toast.success(t('products.productAdded'));
             }
             setShowForm(false);
           }}
@@ -140,6 +142,7 @@ interface ProductFormProps {
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: product?.name || '',
     price: product?.price || 0,
@@ -155,13 +158,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
+        toast.error(t('toast.selectImageFile'));
         return;
       }
       
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
+        toast.error(t('toast.imageTooLarge'));
         return;
       }
 
@@ -182,7 +185,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.category || formData.price <= 0) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('toast.fillAllFields'));
       return;
     }
     

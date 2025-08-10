@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Users, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface UserManagementSimpleProps {
   token: string;
 }
 
 const UserManagementSimple: React.FC<UserManagementSimpleProps> = ({ token }) => {
+  const { t } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -36,7 +38,7 @@ const UserManagementSimple: React.FC<UserManagementSimpleProps> = ({ token }) =>
       console.log('Response status:', response.status);
       
       if (response.ok) {
-        toast.success('User created successfully');
+        toast.success(t('users.userCreated'));
         setFormData({
           username: '',
           email: '',
@@ -47,11 +49,11 @@ const UserManagementSimple: React.FC<UserManagementSimpleProps> = ({ token }) =>
       } else {
         const error = await response.json();
         console.error('Create user error:', error);
-        toast.error(error.error || 'Failed to create user');
+        toast.error(error.error || t('users.failedToCreateUser'));
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user');
+      toast.error(t('users.failedToCreateUser'));
     } finally {
       setLoading(false);
     }

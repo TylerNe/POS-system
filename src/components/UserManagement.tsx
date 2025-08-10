@@ -3,12 +3,14 @@ import { Users, Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import type { User } from '../types';
 import { usersAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface UserManagementProps {
   // No props needed - token is handled by axios interceptors
 }
 
 const UserManagement: React.FC<UserManagementProps> = () => {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -58,7 +60,7 @@ const UserManagement: React.FC<UserManagementProps> = () => {
 
     try {
       await usersAPI.delete(userId);
-      toast.success('User deleted successfully');
+      toast.success(t('users.userDeleted'));
       fetchUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error);
@@ -219,6 +221,7 @@ interface UserFormProps {
 }
 
 const UserForm: React.FC<UserFormProps> = ({ user, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     username: user?.username || '',
     email: user?.email || '',
@@ -236,11 +239,11 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose, onSave }) => {
       if (user) {
         // Update existing user
         await usersAPI.update(user.id, formData);
-        toast.success('User updated successfully');
+        toast.success(t('users.userUpdated'));
       } else {
         // Create new user
         await usersAPI.create(formData);
-        toast.success('User created successfully');
+        toast.success(t('users.userAdded'));
       }
       onSave();
     } catch (error: any) {

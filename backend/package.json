@@ -11,6 +11,10 @@
     "init-db-prod": "node dist/scripts/initDB.js",
     "create-admin-prod": "node dist/scripts/createAdmin.js",
     "deploy-db": "node dist/scripts/deployDB.js",
+    "update-db": "ts-node src/scripts/updateDB.ts",
+    "add-metadata": "ts-node src/scripts/addMetadataField.ts",
+    "add-currency": "ts-node src/scripts/addCurrencyField.ts",
+    "add-language": "ts-node src/scripts/addLanguageField.ts",
     "postbuild": "echo 'Build completed successfully'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

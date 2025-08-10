@@ -72,4 +72,5 @@ export interface CreateOrderRequest {
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
+  metadata?: any;
 }

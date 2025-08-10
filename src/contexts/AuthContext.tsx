@@ -64,11 +64,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authAPI.login(username, password);
       const { user, token } = response;
 
+      console.log('Login response:', { user, token });
+
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setToken(token);
       setUser(user);
       toast.success('Login successful!');
+      
+      console.log('State updated, user:', user);
     } catch (error: any) {
       const message = error.response?.data?.error || 'Login failed';
       toast.error(message);

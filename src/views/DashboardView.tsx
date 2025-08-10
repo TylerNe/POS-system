@@ -9,6 +9,8 @@ import {
   Package
 } from 'lucide-react';
 import { analyticsAPI } from '../services/api';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import toast from 'react-hot-toast';
 
 interface DailySale {
@@ -54,6 +56,8 @@ interface TopProduct {
 }
 
 const DashboardView: React.FC = () => {
+  const { formatCurrency } = useCurrency();
+  const { t } = useLanguage();
   const [dailySales, setDailySales] = useState<DailySale[]>([]);
   const [monthlySales, setMonthlySales] = useState<MonthlySale[]>([]);
   const [yearlySales, setYearlySales] = useState<YearlySale[]>([]);
@@ -81,7 +85,7 @@ const DashboardView: React.FC = () => {
       setTopProducts(topProductsData.top_products || []);
     } catch (error: any) {
       console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics data');
+      toast.error(t('toast.failedToLoadAnalytics'));
     } finally {
       setLoading(false);
     }
@@ -118,9 +122,9 @@ const DashboardView: React.FC = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
-            <h1 className="text-2xl font-semibold text-gray-900">Analytics Dashboard</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t('dashboard.title')}</h1>
             <p className="mt-2 text-sm text-gray-700">
-              Sales analytics and business insights
+              {t('dashboard.subtitle')}
             </p>
           </div>
         </div>
@@ -142,9 +146,9 @@ const DashboardView: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Analytics Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{t('dashboard.title')}</h1>
           <p className="mt-2 text-sm text-gray-700">
-            Sales analytics and business insights
+            {t('dashboard.subtitle')}
           </p>
         </div>
       </div>
@@ -160,10 +164,10 @@ const DashboardView: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Total Revenue
+{t('dashboard.totalRevenue')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    ${totalRevenue.toFixed(2)}
+                    {formatCurrency(totalRevenue)}
                   </dd>
                 </dl>
               </div>
@@ -180,7 +184,7 @@ const DashboardView: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Total Orders
+{t('dashboard.totalOrders')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {totalOrders.toLocaleString()}
@@ -200,10 +204,10 @@ const DashboardView: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Avg Order Value
+{t('dashboard.avgOrderValue')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    ${avgOrderValue.toFixed(2)}
+                    {formatCurrency(avgOrderValue)}
                   </dd>
                 </dl>
               </div>
@@ -220,7 +224,7 @@ const DashboardView: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Top Products
+{t('dashboard.topProducts')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {topProducts.length}
@@ -247,7 +251,7 @@ const DashboardView: React.FC = () => {
                 }`}
               >
                 <Calendar className="h-4 w-4 mr-2 inline" />
-                {tab.charAt(0).toUpperCase() + tab.slice(1)} Sales
+                {tab === 'daily' ? t('dashboard.dailySales') : tab === 'monthly' ? t('dashboard.monthlySales') : t('dashboard.yearlySales')}
               </button>
             ))}
           </nav>
@@ -260,7 +264,7 @@ const DashboardView: React.FC = () => {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
               <BarChart3 className="h-5 w-5 mr-2 inline" />
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Sales Data
+{activeTab === 'daily' ? t('dashboard.dailySales') + ' Data' : activeTab === 'monthly' ? t('dashboard.monthlySales') + ' Data' : t('dashboard.yearlySales') + ' Data'}
             </h3>
             <div className="overflow-hidden">
               <div className="max-h-64 overflow-y-auto">
@@ -268,13 +272,13 @@ const DashboardView: React.FC = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Period
+{t('dashboard.period')}
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Orders
+                        {t('dashboard.orders')}
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Revenue
+                        {t('dashboard.revenue')}
                       </th>
                     </tr>
                   </thead>
@@ -290,7 +294,7 @@ const DashboardView: React.FC = () => {
                           {item.orders_count}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          ${item.revenue.toFixed(2)}
+                          {formatCurrency(item.revenue)}
                         </td>
                       </tr>
                     ))}
@@ -306,7 +310,7 @@ const DashboardView: React.FC = () => {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
               <Trophy className="h-5 w-5 mr-2 inline" />
-              Top Selling Products
+{t('dashboard.topSellingProducts')}
             </h3>
             <div className="space-y-3">
               {topProducts.slice(0, 5).map((product, index) => (
@@ -323,8 +327,8 @@ const DashboardView: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{product.total_sold} sold</p>
-                    <p className="text-sm text-gray-500">${product.total_revenue.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-gray-900">{product.total_sold} {t('dashboard.sold')}</p>
+                    <p className="text-sm text-gray-500">{formatCurrency(product.total_revenue)}</p>
                   </div>
                 </div>
               ))}
@@ -338,28 +342,28 @@ const DashboardView: React.FC = () => {
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Payment Methods Breakdown
+{t('dashboard.paymentMethodsBreakdown')}
             </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {getCurrentData().length > 0 && (
                 <>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
-                      ${getCurrentData().reduce((sum, item) => sum + item.cash_revenue, 0).toFixed(2)}
+                      {formatCurrency(getCurrentData().reduce((sum, item) => sum + item.cash_revenue, 0))}
                     </div>
-                    <div className="text-sm text-gray-500">Cash Payments</div>
+                    <div className="text-sm text-gray-500">{t('dashboard.cashPayments')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
-                      ${getCurrentData().reduce((sum, item) => sum + item.card_revenue, 0).toFixed(2)}
+                      {formatCurrency(getCurrentData().reduce((sum, item) => sum + item.card_revenue, 0))}
                     </div>
-                    <div className="text-sm text-gray-500">Card Payments</div>
+                    <div className="text-sm text-gray-500">{t('dashboard.cardPayments')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">
-                      ${getCurrentData().reduce((sum, item) => sum + item.digital_revenue, 0).toFixed(2)}
+                      {formatCurrency(getCurrentData().reduce((sum, item) => sum + item.digital_revenue, 0))}
                     </div>
-                    <div className="text-sm text-gray-500">Digital Payments</div>
+                    <div className="text-sm text-gray-500">{t('dashboard.digitalPayments')}</div>
                   </div>
                 </>
               )}

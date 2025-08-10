@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Store, Receipt, Users } from 'lucide-react';
+import { Settings, Store, Receipt, Users, QrCode, DollarSign, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import UserManagement from '../components/UserManagement';
+import VietQRSettings from '../components/VietQRSettings';
 import toast from 'react-hot-toast';
 
 interface SettingsData {
@@ -20,6 +23,9 @@ interface SettingsData {
 
 const SettingsView: React.FC = () => {
   const { user } = useAuth();
+  const { currency, setCurrency, isLoading: currencyLoading } = useCurrency();
+  const { language, setLanguage, t } = useLanguage();
+  const [showVietQRSettings, setShowVietQRSettings] = useState(false);
   const [settings, setSettings] = useState<SettingsData>({
     storeName: 'My Store',
     storeAddress: '123 Main Street, City, State 12345',
@@ -52,16 +58,16 @@ const SettingsView: React.FC = () => {
   const handleSaveSettings = () => {
     try {
       localStorage.setItem('posSettings', JSON.stringify(settings));
-      toast.success('Settings saved successfully!');
+      toast.success(t('toast.settingsSaved'));
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error(t('toast.failedToSaveSettings'));
     }
   };
   return (
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{t('settings.title')}</h1>
           <p className="mt-2 text-sm text-gray-700">
             Configure your POS system preferences and business information
           </p>
@@ -278,6 +284,128 @@ const SettingsView: React.FC = () => {
         {user?.role === 'admin' && (
           <UserManagement />
         )}
+
+        {/* Currency Settings */}
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-primary-600" />
+              <h3 className="ml-3 text-lg leading-6 font-medium text-gray-900">
+                {t('settings.currencySettings')}
+              </h3>
+            </div>
+            <div className="mt-5">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('settings.currency')}
+                  </label>
+                  <select
+                    value={currency.code}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      const newCurrency = code === 'VND' 
+                        ? { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' }
+                        : { code: 'USD', symbol: '$', name: 'US Dollar' };
+                      setCurrency(newCurrency);
+                    }}
+                    disabled={currencyLoading}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  >
+                    <option value="VND">Vietnamese Dong (₫)</option>
+                    <option value="USD">US Dollar ($)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Current Setting
+                  </label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-900">
+                      <strong>{currency.name}</strong> ({currency.symbol})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Example: {currency.code === 'VND' ? '50,000 ₫' : '$50.00'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Language Settings */}
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center">
+              <Globe className="h-8 w-8 text-primary-600" />
+              <h3 className="ml-3 text-lg leading-6 font-medium text-gray-900">
+                {t('settings.languageSettings')}
+              </h3>
+            </div>
+            <div className="mt-5">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('settings.language')}
+                  </label>
+                  <select
+                    value={language.code}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      const newLanguage = code === 'vi' 
+                        ? { code: 'vi', name: 'Vietnamese' }
+                        : { code: 'en', name: 'English' };
+                      setLanguage(newLanguage);
+                    }}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  >
+                    <option value="vi">{t('settings.vietnamese')}</option>
+                    <option value="en">{t('settings.english')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Current Setting
+                  </label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-900">
+                      <strong>{language.name}</strong> ({language.code.toUpperCase()})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Example: {t('common.loading')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* VietQR Settings */}
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <QrCode className="h-8 w-8 text-primary-600" />
+                <h3 className="ml-3 text-lg leading-6 font-medium text-gray-900">
+                  VietQR Settings
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowVietQRSettings(true)}
+                className="bg-primary-600 text-white px-3 py-1 rounded-md hover:bg-primary-700 text-sm"
+              >
+                Configure
+              </button>
+            </div>
+            <div className="mt-5">
+              <p className="text-sm text-gray-600">
+                Configure bank accounts and settings for VietQR payment processing.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Save Button */}
@@ -291,6 +419,14 @@ const SettingsView: React.FC = () => {
           Save Settings
         </button>
       </div>
+
+      {/* VietQR Settings Modal */}
+      {showVietQRSettings && (
+        <VietQRSettings
+          onClose={() => setShowVietQRSettings(false)}
+          onSave={() => setShowVietQRSettings(false)}
+        />
+      )}
     </div>
   );
 };
