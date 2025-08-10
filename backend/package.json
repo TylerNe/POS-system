@@ -10,6 +10,7 @@
     "init-db": "ts-node src/scripts/initDB.ts",
     "init-db-prod": "node dist/scripts/initDB.js",
     "create-admin-prod": "node dist/scripts/createAdmin.js",
+    "deploy-db": "node dist/scripts/deployDB.js",
     "postbuild": "echo 'Build completed successfully'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
