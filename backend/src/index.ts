@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import corsMiddleware from './config/cors';
 
 // Import routes
@@ -30,11 +31,18 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Serve frontend static files in production
-if (process.env.NODE_ENV === 'production') {
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+if (isProduction) {
   const frontendBuildPath = path.join(__dirname, '../../dist');
-  app.use(express.static(frontendBuildPath));
+  console.log('📁 Attempting to serve frontend from:', frontendBuildPath);
   
-  console.log('📁 Serving frontend from:', frontendBuildPath);
+  // Check if dist directory exists
+  if (fs.existsSync(frontendBuildPath)) {
+    app.use(express.static(frontendBuildPath));
+    console.log('✅ Frontend static files served successfully');
+  } else {
+    console.log('❌ Frontend dist directory not found:', frontendBuildPath);
+  }
 }
 
 // Health check endpoint for Railway
@@ -64,7 +72,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Catch-all handler for frontend routing in production
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   app.get('*', (req, res) => {
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api/')) {
@@ -75,7 +83,18 @@ if (process.env.NODE_ENV === 'production') {
     }
     
     const indexPath = path.join(__dirname, '../../dist/index.html');
-    res.sendFile(indexPath);
+    
+    if (fs.existsSync(indexPath)) {
+      console.log('📄 Serving index.html for:', req.path);
+      res.sendFile(indexPath);
+    } else {
+      console.log('❌ index.html not found at:', indexPath);
+      res.status(404).json({ 
+        error: 'Frontend not found',
+        path: req.originalUrl,
+        indexPath: indexPath
+      });
+    }
   });
 } else {
   // 404 handler for development
