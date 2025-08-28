@@ -28,8 +28,8 @@ RUN cd backend && npm run build
 # Set production environment
 ENV NODE_ENV=production
 
-# Expose port
-EXPOSE 5000
+# Expose port (Railway uses PORT env var)
+EXPOSE $PORT
 
 # Start the application
 CMD ["npm", "start"]
