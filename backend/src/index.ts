@@ -33,15 +33,39 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Serve frontend static files in production
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
 if (isProduction) {
-  const frontendBuildPath = path.join(__dirname, '../../dist');
-  console.log('📁 Attempting to serve frontend from:', frontendBuildPath);
+  // Try multiple possible paths for frontend build
+  const possiblePaths = [
+    path.join(__dirname, '../../dist'),           // Local development
+    path.join(__dirname, '../dist'),              // Docker container
+    path.join(process.cwd(), 'dist'),             // Current working directory
+    path.join(process.cwd(), '../dist')           // Parent directory
+  ];
   
-  // Check if dist directory exists
-  if (fs.existsSync(frontendBuildPath)) {
-    app.use(express.static(frontendBuildPath));
-    console.log('✅ Frontend static files served successfully');
-  } else {
-    console.log('❌ Frontend dist directory not found:', frontendBuildPath);
+  let frontendServed = false;
+  
+  for (const frontendBuildPath of possiblePaths) {
+    console.log('📁 Checking frontend path:', frontendBuildPath);
+    
+    if (fs.existsSync(frontendBuildPath)) {
+      app.use(express.static(frontendBuildPath));
+      console.log('✅ Frontend static files served from:', frontendBuildPath);
+      frontendServed = true;
+      break;
+    }
+  }
+  
+  if (!frontendServed) {
+    console.log('❌ Frontend dist directory not found in any expected location');
+    console.log('📂 Current working directory:', process.cwd());
+    console.log('📂 __dirname:', __dirname);
+    
+    // List files in current directory for debugging
+    try {
+      const files = fs.readdirSync(process.cwd());
+      console.log('📂 Files in current directory:', files);
+    } catch (error) {
+      console.log('❌ Cannot read current directory:', error);
+    }
   }
 }
 
@@ -82,17 +106,33 @@ if (isProduction) {
       });
     }
     
-    const indexPath = path.join(__dirname, '../../dist/index.html');
+    // Try multiple possible paths for index.html
+    const possibleIndexPaths = [
+      path.join(__dirname, '../../dist/index.html'),  // Local development
+      path.join(__dirname, '../dist/index.html'),     // Docker container
+      path.join(process.cwd(), 'dist/index.html'),    // Current working directory
+      path.join(process.cwd(), '../dist/index.html')  // Parent directory
+    ];
     
-    if (fs.existsSync(indexPath)) {
-      console.log('📄 Serving index.html for:', req.path);
-      res.sendFile(indexPath);
-    } else {
-      console.log('❌ index.html not found at:', indexPath);
+    let indexServed = false;
+    
+    for (const indexPath of possibleIndexPaths) {
+      console.log('📄 Checking index.html path:', indexPath);
+      
+      if (fs.existsSync(indexPath)) {
+        console.log('📄 Serving index.html for:', req.path);
+        res.sendFile(indexPath);
+        indexServed = true;
+        break;
+      }
+    }
+    
+    if (!indexServed) {
+      console.log('❌ index.html not found in any expected location');
       res.status(404).json({ 
         error: 'Frontend not found',
         path: req.originalUrl,
-        indexPath: indexPath
+        checkedPaths: possibleIndexPaths
       });
     }
   });

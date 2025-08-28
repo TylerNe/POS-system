@@ -4,17 +4,29 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy root package.json first
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install root dependencies
+RUN npm install
 
-# Copy source code
+# Copy backend package.json
+COPY backend/package*.json ./backend/
+
+# Install backend dependencies
+RUN cd backend && npm install
+
+# Copy all source code
 COPY . .
 
-# Build the TypeScript code
-RUN npm run build
+# Build frontend
+RUN npm run build:frontend
+
+# Build backend
+RUN cd backend && npm run build
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 5000
