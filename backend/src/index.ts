@@ -78,6 +78,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test route to check if Express is handling requests
+app.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Express is working!',
+    timestamp: new Date().toISOString(),
+    path: req.path,
+    isProduction: isProduction
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -98,8 +108,11 @@ app.get('/api/health', (req, res) => {
 // Catch-all handler for frontend routing in production
 if (isProduction) {
   app.get('*', (req, res) => {
+    console.log('🎯 Catch-all handler triggered for:', req.path);
+    
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api/')) {
+      console.log('🚫 API route detected, returning 404');
       return res.status(404).json({ 
         error: 'API route not found',
         path: req.originalUrl
