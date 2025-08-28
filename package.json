@@ -17,6 +17,10 @@
     "share-backend": "cd backend && npm start",
     "tunnel": "npx ngrok http 3000"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "@types/web-bluetooth": "^0.0.15",

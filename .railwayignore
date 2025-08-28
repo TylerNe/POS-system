@@ -10,3 +10,4 @@ README.md
 dist
 backend/dist
 debug-build.js
+backend/node_modules
