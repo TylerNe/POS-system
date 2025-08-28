@@ -1,7 +1,18 @@
 // Dynamic API configuration for different environments
 export const getApiConfig = () => {
+  // Check if we're in production (Railway, Vercel, Netlify, etc.)
+  const isProduction = import.meta.env.PROD;
+  
   // Check if we're running on ngrok
   const isNgrok = window.location.hostname.includes('ngrok');
+  
+  // Check if we're on Railway
+  const isRailway = window.location.hostname.includes('railway.app');
+  
+  if (isProduction || isRailway) {
+    // In production, use same origin for API calls
+    return `${window.location.origin}/api`;
+  }
   
   if (isNgrok) {
     // Get backend URL from localStorage or prompt user

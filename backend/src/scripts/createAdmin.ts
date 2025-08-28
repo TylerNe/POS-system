@@ -1,57 +1,49 @@
 import bcrypt from 'bcryptjs';
 import pool from '../config/database';
 
-async function createAdmin() {
+const createAdmin = async () => {
   try {
-    console.log('🔧 Creating/updating admin user...');
+    const username = 'admin';
+    const email = 'admin@pos.com';
+    const password = 'admin123';
+    const role = 'admin';
 
-    // Delete existing admin user
-    await pool.query('DELETE FROM users WHERE username = $1', ['admin']);
-    console.log('🗑️ Deleted existing admin user');
+    // Check if admin already exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1 OR email = $2',
+      [username, email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      console.log('Admin user already exists');
+      return;
+    }
 
     // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash('admin123', saltRounds);
-    console.log('🔐 Password hashed');
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new admin user
+    // Create admin user
     const result = await pool.query(
-      `INSERT INTO users (username, email, password, role) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, username, email, role`,
-      ['admin', 'admin@pos.com', hashedPassword, 'admin']
+      'INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
+      [username, email, hashedPassword, role]
     );
 
-    console.log('✅ Admin user created:');
-    console.log(`   - ID: ${result.rows[0].id}`);
-    console.log(`   - Username: ${result.rows[0].username}`);
-    console.log(`   - Email: ${result.rows[0].email}`);
-    console.log(`   - Role: ${result.rows[0].role}`);
-
-    // Test password immediately
-    console.log('\n🧪 Testing password...');
-    const testResult = await bcrypt.compare('admin123', hashedPassword);
-    console.log(`   Password test: ${testResult ? '✅ PASS' : '❌ FAIL'}`);
-
-    // Also create/update cashier
-    await pool.query('DELETE FROM users WHERE username = $1', ['cashier1']);
-    const cashierHash = await bcrypt.hash('cashier123', saltRounds);
-    await pool.query(
-      `INSERT INTO users (username, email, password, role) 
-       VALUES ($1, $2, $3, $4)`,
-      ['cashier1', 'cashier1@pos.com', cashierHash, 'cashier']
-    );
-    console.log('✅ Cashier user created');
-
-    console.log('\n🎯 Login credentials:');
-    console.log('   Admin: admin / admin123');
-    console.log('   Cashier: cashier1 / cashier123');
+    const user = result.rows[0];
+    console.log('Admin user created successfully:', {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    });
+    console.log('Login credentials:');
+    console.log('Username:', username);
+    console.log('Password:', password);
 
   } catch (error) {
-    console.error('❌ Error creating admin:', error);
+    console.error('Error creating admin user:', error);
   } finally {
     await pool.end();
   }
-}
+};
 
 createAdmin();

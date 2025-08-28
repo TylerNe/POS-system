@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { printerService, type ReceiptData } from '../services/bluetoothPrinter';
+import { Printer, Bluetooth, CheckCircle, XCircle } from 'lucide-react';
 import type { Order } from '../types';
+import toast from 'react-hot-toast';
 
 interface ReceiptProps {
   order: Order;
@@ -26,6 +29,13 @@ const Receipt: React.FC<ReceiptProps> = ({
   receiptFooter = 'Hẹn gặp lại!'
 }) => {
   const { formatCurrency } = useCurrency();
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isBluetoothConnected, setIsBluetoothConnected] = useState(false);
+
+  // Check Bluetooth connection status
+  React.useEffect(() => {
+    setIsBluetoothConnected(printerService.isConnected());
+  }, []);
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -145,6 +155,49 @@ const Receipt: React.FC<ReceiptProps> = ({
     }
   };
 
+  const handleBluetoothPrint = async () => {
+    if (!isBluetoothConnected) {
+      toast.error('Máy in Bluetooth chưa được kết nối. Vui lòng kết nối máy in trước.');
+      return;
+    }
+
+    setIsPrinting(true);
+    try {
+      const receiptData: ReceiptData = {
+        storeName,
+        storeAddress,
+        storePhone,
+        receiptNumber,
+        timestamp: format(new Date(order.timestamp), 'dd/MM/yyyy HH:mm', { locale: vi }),
+        cashierName,
+        items: order.items.map(item => ({
+          name: item.product?.name || item.product_name,
+          quantity: item.quantity,
+          unitPrice: Number(item.unit_price || item.product?.price || 0),
+          totalPrice: Number(item.total_price || (item.unit_price || 0) * item.quantity)
+        })),
+        subtotal: Number(order.subtotal),
+        tax: Number(order.tax),
+        discount: Number(order.discount),
+        total: Number(order.total),
+        paymentMethod: order.paymentMethod === 'cash' ? 'Tiền mặt' : 
+                      order.paymentMethod === 'card' ? 'Thẻ' : 
+                      order.paymentMethod === 'vietqr' ? 'VietQR' : 
+                      order.paymentMethod === 'digital' ? 'Ví điện tử' : 'Khác',
+        receiptHeader,
+        receiptFooter
+      };
+
+      await printerService.printReceipt(receiptData);
+      toast.success('In hóa đơn thành công!');
+    } catch (error) {
+      console.error('Lỗi khi in hóa đơn:', error);
+      toast.error(`Lỗi khi in: ${error instanceof Error ? error.message : 'Không thể in hóa đơn'}`);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-sm mx-auto">
       {/* Receipt Preview */}
@@ -207,14 +260,50 @@ const Receipt: React.FC<ReceiptProps> = ({
         </div>
       </div>
       
-      {/* Print Button */}
-      <div className="flex space-x-2">
-        <button
-          onClick={handlePrint}
-          className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors"
-        >
-          In hóa đơn
-        </button>
+      {/* Print Buttons */}
+      <div className="space-y-3">
+        {/* Bluetooth Connection Status */}
+        <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-2">
+            {isBluetoothConnected ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-500" />
+            )}
+            <span className="text-sm text-gray-600">
+              {isBluetoothConnected ? 'Máy in Bluetooth đã kết nối' : 'Máy in Bluetooth chưa kết nối'}
+            </span>
+          </div>
+        </div>
+
+        {/* Print Options */}
+        <div className="flex space-x-2">
+          <button
+            onClick={handlePrint}
+            className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2"
+          >
+            <Printer className="h-4 w-4" />
+            <span>In thường</span>
+          </button>
+          
+          <button
+            onClick={handleBluetoothPrint}
+            disabled={!isBluetoothConnected || isPrinting}
+            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+          >
+            {isPrinting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Đang in...</span>
+              </>
+            ) : (
+              <>
+                <Bluetooth className="h-4 w-4" />
+                <span>In Bluetooth</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

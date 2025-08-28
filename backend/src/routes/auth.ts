@@ -6,7 +6,8 @@ import {
   getAllUsers, 
   createUser, 
   updateUser, 
-  deleteUser 
+  deleteUser,
+  refreshToken
 } from '../controllers/authController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
@@ -15,6 +16,9 @@ const router = express.Router();
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+
+// Token refresh route (requires expired token)
+router.post('/refresh', refreshToken);
 
 // Protected routes
 router.get('/profile', authenticateToken, getProfile);

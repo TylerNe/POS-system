@@ -30,8 +30,8 @@ interface POSStore {
   createOrder: (paymentMethod: PaymentMethod, discount?: number, customerInfo?: { name?: string; phone?: string; email?: string }) => Promise<Order>;
 
   // UI State
-  currentView: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings';
-  setCurrentView: (view: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings') => void;
+  currentView: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings' | 'kitchen';
+  setCurrentView: (view: 'pos' | 'dashboard' | 'products' | 'orders' | 'settings' | 'kitchen') => void;
 }
 
 const TAX_RATE = 0.1; // 10% tax

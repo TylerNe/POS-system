@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   register: (username: string, email: string, password: string, role?: string) => Promise<void>;
+  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,9 +44,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           setToken(token);
           setUser(JSON.parse(savedUser));
-          // Verify token is still valid
-          await authAPI.getProfile();
+          
+          // Only verify token if backend is available with timeout
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 3000)
+          );
+          
+          try {
+            await Promise.race([authAPI.getProfile(), timeoutPromise]);
+          } catch (error: any) {
+            console.log('Backend not available or timeout, skipping token verification');
+            // Don't clear storage if backend is just not available
+            // Only clear if it's an authentication error
+            if (error.response?.status === 401) {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('user');
+              setUser(null);
+              setToken(null);
+            }
+          }
         } catch (error) {
+          console.error('Error during auth init:', error);
           // Token is invalid, clear storage
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user');
@@ -105,6 +124,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Logged out successfully');
   };
 
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const currentToken = localStorage.getItem('auth_token');
+      if (!currentToken) {
+        return false;
+      }
+
+      const response = await authAPI.refreshToken();
+      const { user, token } = response;
+
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setToken(token);
+      setUser(user);
+      
+      console.log('Token refreshed successfully');
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      logout();
+      return false;
+    }
+  };
+
   const value = {
     user,
     token,
@@ -112,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     register,
+    refreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

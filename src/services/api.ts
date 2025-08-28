@@ -22,12 +22,40 @@ api.interceptors.request.use((config) => {
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      // Redirect to login if needed
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Check if it's a token expiration error
+      if (error.response?.data?.code === 'TOKEN_EXPIRED') {
+        try {
+          // Try to refresh the token
+          const response = await api.post('/auth/refresh');
+          const { token } = response.data;
+          
+          // Update token in localStorage
+          localStorage.setItem('auth_token', token);
+          
+          // Update the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          
+          // Retry the original request
+          return api(originalRequest);
+        } catch (refreshError) {
+          // Refresh failed, redirect to login
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        }
+      } else {
+        // Other 401 errors, redirect to login
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -47,6 +75,11 @@ export const authAPI = {
 
   getProfile: async () => {
     const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  refreshToken: async () => {
+    const response = await api.post('/auth/refresh');
     return response.data;
   },
 };
@@ -260,6 +293,19 @@ export const settingsAPI = {
 export const healthAPI = {
   check: async () => {
     const response = await api.get('/health');
+    return response.data;
+  },
+};
+
+// Kitchen API
+export const kitchenAPI = {
+  getOrders: async () => {
+    const response = await api.get('/kitchen/orders');
+    return response.data;
+  },
+
+  updateOrderStatus: async (orderId: string, status: 'Pending' | 'In Progress' | 'Done') => {
+    const response = await api.put(`/kitchen/orders/${orderId}/status`, { status });
     return response.data;
   },
 };

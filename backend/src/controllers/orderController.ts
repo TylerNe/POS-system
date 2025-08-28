@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database';
 import { CreateOrderRequest } from '../models/types';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { notifyNewOrder } from './kitchenController';
 
 export const getAllOrders = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -297,6 +298,11 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       timestamp: orderData.created_at, // For compatibility
       metadata: orderData.metadata || {}
     };
+
+    // Notify kitchen about new order (async, don't wait for it)
+    notifyNewOrder(order.id).catch(error => {
+      console.error('Failed to notify kitchen about new order:', error);
+    });
 
     res.status(201).json({
       message: 'Order created successfully',

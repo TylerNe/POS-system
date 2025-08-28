@@ -40,7 +40,7 @@ export const register = async (req: Request, res: Response) => {
     // Generate JWT
     const payload = { userId: user.id, username: user.username, role: user.role };
     const secret = process.env.JWT_SECRET as string;
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = jwt.sign(payload, secret, { expiresIn: '30d' });
 
     res.status(201).json({
       message: 'User created successfully',
@@ -89,7 +89,7 @@ export const login = async (req: Request, res: Response) => {
     // Generate JWT
     const payload = { userId: user.id, username: user.username, role: user.role };
     const secret = process.env.JWT_SECRET as string;
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = jwt.sign(payload, secret, { expiresIn: '30d' });
 
     res.json({
       message: 'Login successful',
@@ -286,5 +286,50 @@ export const deleteUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+
+    // Verify the token (even if expired, we can still get the payload)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!, { ignoreExpiration: true }) as any;
+    
+    // Check if user still exists
+    const userResult = await pool.query(
+      'SELECT id, username, email, role FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Generate new JWT
+    const payload = { userId: user.id, username: user.username, role: user.role };
+    const secret = process.env.JWT_SECRET as string;
+    const newToken = jwt.sign(payload, secret, { expiresIn: '30d' });
+
+    res.json({
+      message: 'Token refreshed successfully',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+      token: newToken
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(401).json({ error: 'Invalid token' });
   }
 };

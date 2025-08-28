@@ -11,6 +11,7 @@ import orderRoutes from './routes/orders';
 import authRoutes from './routes/auth';
 import vietQRRoutes from './routes/vietqr';
 import settingsRoutes from './routes/settings';
+import kitchenRoutes from './routes/kitchen';
 
 // Load environment variables
 dotenv.config();
@@ -28,7 +29,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check endpoint for Render
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, '../../dist');
+  app.use(express.static(frontendBuildPath));
+  
+  console.log('📁 Serving frontend from:', frontendBuildPath);
+}
+
+// Health check endpoint for Railway
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
@@ -41,8 +50,9 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/vietqr', vietQRRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/vietqr', vietQRRoutes);
+app.use('/api/kitchen', kitchenRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -53,13 +63,29 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Route not found',
-    path: req.originalUrl
+// Catch-all handler for frontend routing in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ 
+        error: 'API route not found',
+        path: req.originalUrl
+      });
+    }
+    
+    const indexPath = path.join(__dirname, '../../dist/index.html');
+    res.sendFile(indexPath);
   });
-});
+} else {
+  // 404 handler for development
+  app.use('*', (req, res) => {
+    res.status(404).json({ 
+      error: 'Route not found',
+      path: req.originalUrl
+    });
+  });
+}
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

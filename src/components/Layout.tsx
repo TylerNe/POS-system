@@ -2,7 +2,7 @@ import React from 'react';
 import { usePOSStore } from '../store';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ShoppingCart, Package, FileText, Settings, LogOut, User, BarChart3 } from 'lucide-react';
+import { ShoppingCart, Package, FileText, Settings, LogOut, User, BarChart3, Utensils } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,6 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'dashboard', label: t('navigation.dashboard'), icon: BarChart3, adminOnly: true },
     { id: 'products', label: t('navigation.products'), icon: Package, adminOnly: true },
     { id: 'orders', label: t('navigation.orders'), icon: FileText, adminOnly: false },
+    { id: 'kitchen', label: 'Kitchen', icon: Utensils, adminOnly: false },
     { id: 'settings', label: t('navigation.settings'), icon: Settings, adminOnly: true },
   ] as const;
 

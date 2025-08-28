@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple SSE Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .connect-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .disconnect-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple SSE Connection Test</h1>
+    
+    <div class="info">
+        <strong>Instructions:</strong><br>
+        1. First login to get a token<br>
+        2. Then test SSE connection<br>
+        3. Watch the logs for connection issues
+    </div>
+    
+    <div id="status" class="status disconnected">
+        Disconnected
+    </div>
+    
+    <div>
+        <button id="loginBtn" onclick="login()">Login</button>
+        <button id="connectBtn" class="connect-btn" onclick="connectSSE()" disabled>Connect SSE</button>
+        <button id="disconnectBtn" class="disconnect-btn" onclick="disconnectSSE()" disabled>Disconnect</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <h3>Connection Log:</h3>
+    <div id="log" class="log"></div>
+
+    <script>
+        let eventSource = null;
+        let isConnected = false;
+        let authToken = null;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            isConnected = connected;
+            
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = 'Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = 'Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        async function login() {
+            log('Attempting to login...');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        username: 'admin', 
+                        password: 'admin123' 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('auth_token', authToken);
+                    log(`Login successful. Token: ${authToken.substring(0, 20)}...`);
+                    document.getElementById('connectBtn').disabled = false;
+                } else {
+                    log(`Login failed: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Login error: ${error.message}`);
+            }
+        }
+
+        function connectSSE() {
+            if (!authToken) {
+                log('ERROR: No auth token found. Please login first.');
+                return;
+            }
+
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            log('Creating EventSource...');
+            
+            try {
+                const url = `/api/kitchen/updates?token=${authToken}`;
+                log(`Connecting to: ${url}`);
+                
+                eventSource = new EventSource(url);
+
+                eventSource.onopen = () => {
+                    log('SSE connection opened successfully');
+                    updateStatus(true);
+                };
+
+                eventSource.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`Received message: ${JSON.stringify(data, null, 2)}`);
+                    } catch (error) {
+                        log(`Error parsing message: ${error.message}`);
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    log(`SSE error occurred: ${error}`);
+                    log(`EventSource readyState: ${eventSource.readyState}`);
+                    updateStatus(false);
+                };
+            } catch (error) {
+                log(`Error creating EventSource: ${error.message}`);
+                updateStatus(false);
+            }
+        }
+
+        function disconnectSSE() {
+            if (eventSource) {
+                log('Closing SSE connection...');
+                eventSource.close();
+                eventSource = null;
+                updateStatus(false);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Auto-login on page load if token exists
+        window.onload = () => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                authToken = token;
+                log('Using existing token from localStorage');
+                document.getElementById('connectBtn').disabled = false;
+            }
+            log('Page loaded. Click Login or Connect to start.');
+        };
+    </script>
+</body>
+</html>

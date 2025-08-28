@@ -1,4 +1,5 @@
 import { type FC } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -12,6 +13,8 @@ import DashboardView from './views/DashboardView';
 import ProductsView from './views/ProductsView';
 import OrdersView from './views/OrdersView';
 import SettingsView from './views/SettingsView';
+
+import KitchenPage from './components/KitchenPage';
 
 const AppContent: FC = () => {
   const { user, loading } = useAuth();
@@ -52,6 +55,10 @@ const AppContent: FC = () => {
         return <OrdersView />;
       case 'settings':
         return user?.role === 'admin' ? <SettingsView /> : <POSView />;
+      case 'kitchen':
+        // Redirect to separate kitchen route instead of rendering in main app
+        window.location.href = '/kitchen';
+        return null;
       default:
         return <POSView />;
     }
@@ -71,7 +78,15 @@ const App: FC = () => {
     <AuthProvider>
       <LanguageProvider>
         <CurrencyProvider>
-          <AppContent />
+          <Router>
+            <Routes>
+              {/* Kitchen route - separate from main app */}
+              <Route path="/kitchen" element={<KitchenPage />} />
+              
+              {/* Main app route */}
+              <Route path="/*" element={<AppContent />} />
+            </Routes>
+          </Router>
           <Toaster 
             position="top-right"
             toastOptions={{

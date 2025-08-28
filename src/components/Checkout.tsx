@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { usePOSStore } from '../store';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { printerService, type ReceiptData } from '../services/bluetoothPrinter';
 import type { PaymentMethod } from '../types';
-import { CreditCard, DollarSign, Smartphone, Receipt, QrCode, X, ArrowLeft, Percent, Calculator } from 'lucide-react';
+import { CreditCard, DollarSign, Smartphone, Receipt, QrCode, X, ArrowLeft, Percent, Calculator, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CheckoutProps {
@@ -21,6 +22,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
   const [selectedDenominations, setSelectedDenominations] = useState<{[key: number]: number}>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<'summary' | 'payment' | 'cash'>('summary');
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(true);
 
   const total = getCartTotal() - discount;
   
@@ -126,6 +128,17 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
       const order = await createOrder(method, discount);
       console.log('🔍 Order created successfully:', order);
       toast.success(t('checkout.paymentSuccess'));
+      
+      // Auto print receipt if enabled and Bluetooth printer is connected
+      if (autoPrintEnabled && printerService.isConnected()) {
+        try {
+          await autoPrintReceipt(order);
+        } catch (error) {
+          console.error('Auto print failed:', error);
+          // Don't show error toast for auto print failure
+        }
+      }
+      
       onComplete(order.id);
     } catch (error) {
       console.error('Payment failed:', error);
@@ -166,6 +179,36 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
 
   const handleCheckout = async () => {
     return handleCheckoutWithMethod(paymentMethod);
+  };
+
+  const autoPrintReceipt = async (order: any) => {
+    const receiptData: ReceiptData = {
+      storeName: 'Cửa hàng của bạn',
+      storeAddress: 'Địa chỉ cửa hàng',
+      storePhone: '0123456789',
+      receiptNumber: order.id,
+      timestamp: new Date(order.timestamp).toLocaleString('vi-VN'),
+      cashierName: order.cashier_name || 'Thu ngân',
+      items: order.items.map((item: any) => ({
+        name: item.product?.name || item.product_name,
+        quantity: item.quantity,
+        unitPrice: Number(item.unit_price || item.product?.price || 0),
+        totalPrice: Number(item.total_price || (item.unit_price || 0) * item.quantity)
+      })),
+      subtotal: Number(order.subtotal),
+      tax: Number(order.tax),
+      discount: Number(order.discount),
+      total: Number(order.total),
+      paymentMethod: order.paymentMethod === 'cash' ? 'Tiền mặt' : 
+                    order.paymentMethod === 'card' ? 'Thẻ' : 
+                    order.paymentMethod === 'vietqr' ? 'VietQR' : 
+                    order.paymentMethod === 'digital' ? 'Ví điện tử' : 'Khác',
+      receiptHeader: 'Cảm ơn quý khách!',
+      receiptFooter: 'Hẹn gặp lại!'
+    };
+
+    await printerService.printReceipt(receiptData);
+    console.log('Auto print completed successfully');
   };
 
   const paymentMethods = [
@@ -306,6 +349,33 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Auto Print Option */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Printer className="h-5 w-5 text-blue-600" />
+            <div>
+              <h3 className="font-semibold text-gray-800">Tự động in hóa đơn</h3>
+              <p className="text-sm text-gray-500">
+                {printerService.isConnected() 
+                  ? 'Máy in Bluetooth đã kết nối' 
+                  : 'Máy in Bluetooth chưa kết nối'}
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoPrintEnabled}
+              onChange={(e) => setAutoPrintEnabled(e.target.checked)}
+              disabled={!printerService.isConnected()}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
       </div>
 
       {/* Continue Button */}

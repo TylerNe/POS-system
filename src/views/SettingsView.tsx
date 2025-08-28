@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Store, Receipt, Users, QrCode, DollarSign, Globe } from 'lucide-react';
+import { Settings, Store, Receipt, Users, QrCode, DollarSign, Globe, Bluetooth } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import UserManagement from '../components/UserManagement';
 import VietQRSettings from '../components/VietQRSettings';
+import BluetoothPrinterManager from '../components/BluetoothPrinterManager';
 import toast from 'react-hot-toast';
 
 interface SettingsData {
@@ -26,6 +27,7 @@ const SettingsView: React.FC = () => {
   const { currency, setCurrency, isLoading: currencyLoading } = useCurrency();
   const { language, setLanguage, t } = useLanguage();
   const [showVietQRSettings, setShowVietQRSettings] = useState(false);
+  const [showBluetoothPrinter, setShowBluetoothPrinter] = useState(false);
   const [settings, setSettings] = useState<SettingsData>({
     storeName: 'My Store',
     storeAddress: '123 Main Street, City, State 12345',
@@ -406,6 +408,31 @@ const SettingsView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Bluetooth Printer Settings */}
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Bluetooth className="h-8 w-8 text-primary-600" />
+                <h3 className="ml-3 text-lg leading-6 font-medium text-gray-900">
+                  Bluetooth Printer
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowBluetoothPrinter(true)}
+                className="bg-primary-600 text-white px-3 py-1 rounded-md hover:bg-primary-700 text-sm"
+              >
+                Configure
+              </button>
+            </div>
+            <div className="mt-5">
+              <p className="text-sm text-gray-600">
+                Connect and configure Bluetooth thermal printer for receipt printing.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Save Button */}
@@ -425,6 +452,14 @@ const SettingsView: React.FC = () => {
         <VietQRSettings
           onClose={() => setShowVietQRSettings(false)}
           onSave={() => setShowVietQRSettings(false)}
+        />
+      )}
+
+      {/* Bluetooth Printer Manager Modal */}
+      {showBluetoothPrinter && (
+        <BluetoothPrinterManager
+          isOpen={showBluetoothPrinter}
+          onClose={() => setShowBluetoothPrinter(false)}
         />
       )}
     </div>
