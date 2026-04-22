@@ -6,10 +6,10 @@ function formatOrder(order: any) {
   if (!order) return null;
   return {
     ...order,
-    subtotal: parseFloat(order.subtotal),
-    tax: parseFloat(order.tax),
-    discount: parseFloat(order.discount),
-    total: parseFloat(order.total),
+    subtotal: parseFloat(order.subtotal || 0),
+    tax: parseFloat(order.tax || 0),
+    discount: parseFloat(order.discount || 0),
+    total: parseFloat(order.total || 0),
     paymentMethod: order.payment_method,
     customerName: order.customer_name,
     customerPhone: order.customer_phone,
@@ -23,24 +23,24 @@ function formatOrder(order: any) {
       id: item.id,
       product_id: item.product_id,
       product_name: item.products?.name ?? '',
-      quantity: parseInt(item.quantity),
-      unit_price: parseFloat(item.unit_price),
-      total_price: parseFloat(item.total_price),
+      quantity: parseInt(item.quantity || 0),
+      unit_price: parseFloat(item.unit_price || 0),
+      total_price: parseFloat(item.total_price || 0),
     })),
   };
 }
 
 export async function GET(req: NextRequest) {
-  const result = await requireAuth(req);
-  if (result instanceof NextResponse) return result;
-
-  const params = req.nextUrl.searchParams;
-  const limit = parseInt(params.get('limit') ?? '50');
-  const offset = parseInt(params.get('offset') ?? '0');
-  const start_date = params.get('start_date');
-  const end_date = params.get('end_date');
-
   try {
+    const result = await requireAuth(req);
+    if (result instanceof NextResponse) return result;
+
+    const params = req.nextUrl.searchParams;
+    const limit = parseInt(params.get('limit') ?? '50');
+    const offset = parseInt(params.get('offset') ?? '0');
+    const start_date = params.get('start_date');
+    const end_date = params.get('end_date');
+
     let query = supabaseAdmin.from('orders').select(`
       *, users!orders_user_id_fkey(username),
       order_items(id, product_id, quantity, unit_price, total_price, products(name))
@@ -56,63 +56,90 @@ export async function GET(req: NextRequest) {
       orders: (orders ?? []).map(formatOrder),
       pagination: { total: count ?? 0, limit, offset, hasMore: offset + limit < (count ?? 0) },
     });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Get orders error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
-  const result = await requireAuth(req);
-  if (result instanceof NextResponse) return result;
-  const authUser = result;
-
-  const { items, payment_method, discount = 0, customer_name, customer_phone, customer_email, metadata = {} } = await req.json();
-
-  if (!items || items.length === 0)
-    return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 });
-  if (!['cash', 'card', 'digital'].includes(payment_method))
-    return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
-
   try {
+    const result = await requireAuth(req);
+    if (result instanceof NextResponse) return result;
+    const authUser = result;
+
+    const { items, payment_method, discount = 0, customer_name, customer_phone, customer_email, metadata = {} } = await req.json();
+
+    if (!items || items.length === 0)
+      return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 });
+
     let subtotal = 0;
     const orderItems: any[] = [];
 
+    // Kiểm tra và chuẩn bị dữ liệu sản phẩm
     for (const item of items) {
       const { data: product, error: productError } = await supabaseAdmin.from('products')
-        .select('id, name, price, stock').eq('id', item.product_id).single();
-      if (productError || !product) return NextResponse.json({ error: `Product ${item.product_id} not found` }, { status: 400 });
-      if (product.stock < item.quantity) return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
+        .select('*').eq('id', item.product_id).single();
+      
+      if (productError || !product) {
+        return NextResponse.json({ error: `Product ${item.product_id} not found` }, { status: 400 });
+      }
+
+      const currentStock = product.stock !== undefined ? product.stock : product.stock_quantity;
+      if (currentStock < item.quantity) {
+        return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
+      }
 
       const itemTotal = parseFloat(product.price) * item.quantity;
       subtotal += itemTotal;
-      orderItems.push({ product_id: item.product_id, quantity: item.quantity, unit_price: parseFloat(product.price), total_price: itemTotal });
+      orderItems.push({ 
+        product_id: item.product_id, 
+        quantity: item.quantity, 
+        unit_price: parseFloat(product.price), 
+        total_price: itemTotal 
+      });
     }
 
     const tax = subtotal * 0.1;
     const total = subtotal + tax - discount;
-    if (total < 0) return NextResponse.json({ error: 'Total cannot be negative' }, { status: 400 });
 
+    // Chèn đơn hàng
     const { data: order, error: orderError } = await supabaseAdmin.from('orders')
-      .insert({ subtotal, tax, discount, total, payment_method, user_id: authUser.id, customer_name: customer_name || null, customer_phone: customer_phone || null, customer_email: customer_email || null, metadata })
+      .insert({ 
+        subtotal, 
+        tax, 
+        discount, 
+        total, 
+        payment_method, 
+        user_id: authUser.id, 
+        customer_name: customer_name || null, 
+        customer_phone: customer_phone || null, 
+        customer_email: customer_email || null, 
+        metadata 
+      })
       .select().single();
+
     if (orderError) throw orderError;
 
-    await supabaseAdmin.from('order_items').insert(orderItems.map(item => ({ ...item, order_id: order.id })));
+    // Chèn chi tiết đơn hàng
+    const { error: itemsError } = await supabaseAdmin.from('order_items')
+      .insert(orderItems.map(item => ({ ...item, order_id: order.id })));
+    
+    if (itemsError) throw itemsError;
 
-    // Update stock
+    // Cập nhật kho hàng
     for (const item of orderItems) {
-      const { data: p } = await supabaseAdmin.from('products').select('stock').eq('id', item.product_id).single();
-      if (p) await supabaseAdmin.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.product_id);
+      const { data: p } = await supabaseAdmin.from('products').select('*').eq('id', item.product_id).single();
+      if (p) {
+        const stockCol = p.stock !== undefined ? 'stock' : 'stock_quantity';
+        const currentStock = p[stockCol];
+        await supabaseAdmin.from('products').update({ [stockCol]: currentStock - item.quantity }).eq('id', item.product_id);
+      }
     }
 
-    const { data: completeOrder } = await supabaseAdmin.from('orders').select(`
-      *, users!orders_user_id_fkey(username),
-      order_items(id, product_id, quantity, unit_price, total_price, products(name))
-    `).eq('id', order.id).single();
-
-    return NextResponse.json({ message: 'Order created successfully', order: formatOrder(completeOrder) }, { status: 201 });
-  } catch (error) {
+    return NextResponse.json({ message: 'Order created successfully', order_id: order.id }, { status: 201 });
+  } catch (error: any) {
     console.error('Create order error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
