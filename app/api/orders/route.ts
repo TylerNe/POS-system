@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const end_date = params.get('end_date');
 
     let query = supabaseAdmin.from('orders').select(`
-      *, users!orders_user_id_fkey(username),
+      *, users(username),
       order_items(id, product_id, quantity, unit_price, total_price, products(name))
     `, { count: 'exact' }).order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -57,7 +57,6 @@ export async function GET(req: NextRequest) {
       pagination: { total: count ?? 0, limit, offset, hasMore: offset + limit < (count ?? 0) },
     });
   } catch (error: any) {
-    console.error('Get orders error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
@@ -76,7 +75,6 @@ export async function POST(req: NextRequest) {
     let subtotal = 0;
     const orderItems: any[] = [];
 
-    // Kiểm tra và chuẩn bị dữ liệu sản phẩm
     for (const item of items) {
       const { data: product, error: productError } = await supabaseAdmin.from('products')
         .select('*').eq('id', item.product_id).single();
@@ -103,14 +101,9 @@ export async function POST(req: NextRequest) {
     const tax = subtotal * 0.1;
     const total = subtotal + tax - discount;
 
-    // Chèn đơn hàng
     const { data: order, error: orderError } = await supabaseAdmin.from('orders')
       .insert({ 
-        subtotal, 
-        tax, 
-        discount, 
-        total, 
-        payment_method, 
+        subtotal, tax, discount, total, payment_method, 
         user_id: authUser.id, 
         customer_name: customer_name || null, 
         customer_phone: customer_phone || null, 
@@ -121,23 +114,28 @@ export async function POST(req: NextRequest) {
 
     if (orderError) throw orderError;
 
-    // Chèn chi tiết đơn hàng
-    const { error: itemsError } = await supabaseAdmin.from('order_items')
+    await supabaseAdmin.from('order_items')
       .insert(orderItems.map(item => ({ ...item, order_id: order.id })));
     
-    if (itemsError) throw itemsError;
-
-    // Cập nhật kho hàng
+    // Cập nhật kho
     for (const item of orderItems) {
       const { data: p } = await supabaseAdmin.from('products').select('*').eq('id', item.product_id).single();
       if (p) {
         const stockCol = p.stock !== undefined ? 'stock' : 'stock_quantity';
-        const currentStock = p[stockCol];
-        await supabaseAdmin.from('products').update({ [stockCol]: currentStock - item.quantity }).eq('id', item.product_id);
+        await supabaseAdmin.from('products').update({ [stockCol]: p[stockCol] - item.quantity }).eq('id', item.product_id);
       }
     }
 
-    return NextResponse.json({ message: 'Order created successfully', order_id: order.id }, { status: 201 });
+    // Lấy lại đơn hàng đầy đủ để trả về cho Frontend
+    const { data: completeOrder } = await supabaseAdmin.from('orders').select(`
+      *, users(username),
+      order_items(id, product_id, quantity, unit_price, total_price, products(name))
+    `).eq('id', order.id).single();
+
+    return NextResponse.json({ 
+      message: 'Order created successfully', 
+      order: formatOrder(completeOrder) 
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Create order error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
