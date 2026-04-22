@@ -5,8 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const DEFAULT = { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' };
 
 export async function GET(req: NextRequest) {
-  const result = await requireAuth(req);
-  if (result instanceof NextResponse) return result;
   const { data } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'currency').single();
   return NextResponse.json({ currency: data?.value ?? DEFAULT });
 }

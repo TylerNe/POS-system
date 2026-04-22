@@ -5,8 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const DEFAULT = { code: 'vi', name: 'Vietnamese' };
 
 export async function GET(req: NextRequest) {
-  const result = await requireAuth(req);
-  if (result instanceof NextResponse) return result;
   const { data } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'language').single();
   return NextResponse.json({ language: data?.value ?? DEFAULT });
 }
