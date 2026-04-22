@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-const DEFAULT = { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' };
+const DEFAULT = { code: 'AUD', symbol: '$', name: 'Australian Dollar' };
 
 export async function GET(req: NextRequest) {
   const { data } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'currency').single();
