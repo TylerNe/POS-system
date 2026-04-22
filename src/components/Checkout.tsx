@@ -522,47 +522,44 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
           <DollarSign className="h-5 w-5 mr-2 text-primary-600" />
           {t('checkout.selectDenomination')}
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {denominations.map((denom) => (
-            <div key={denom} className="flex flex-col items-center bg-gray-50 p-2 rounded-xl border border-gray-100">
-              <span className="text-sm font-bold text-gray-700 mb-2">{formatDenomination(denom)}</span>
-              <div className="flex items-center justify-between w-full px-1">
+            <div key={denom} className="flex flex-col items-center bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+              <span className="text-[10px] font-bold text-gray-500 mb-1">{formatDenomination(denom)}</span>
+              <div className="flex flex-col items-center w-full space-y-1">
                 <button
                   type="button"
-                  onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) - 1)}
-                  className="w-8 h-8 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 font-bold shadow-sm transition-all"
+                  onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) + 1)}
+                  className="w-full h-7 bg-primary-600 hover:bg-primary-700 rounded text-white font-bold shadow-sm transition-all text-xs"
                 >
-                  -
+                  +
                 </button>
-                <span className="text-lg font-bold text-primary-600 min-w-[24px] text-center">
+                <span className="text-sm font-bold text-primary-600">
                   {selectedDenominations[denom] || 0}
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) + 1)}
-                  className="w-8 h-8 bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center justify-center text-white font-bold shadow-sm transition-all"
+                  onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) - 1)}
+                  className="w-full h-7 bg-white border border-gray-200 hover:bg-gray-100 rounded flex items-center justify-center text-gray-400 font-bold shadow-sm transition-all text-xs"
                 >
-                  +
+                  -
                 </button>
-              </div>
-              <div className="mt-2 text-[10px] text-gray-400 font-medium">
-                {formatCurrency((selectedDenominations[denom] || 0) * denom)}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Manual Input */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <h3 className="font-semibold text-gray-800 mb-3">{t('checkout.orEnterAmount')}</h3>
+      {/* Manual Input - More Compact */}
+      <div className="bg-white border border-gray-200 rounded-xl p-2 shadow-sm flex items-center space-x-3">
+        <h3 className="font-semibold text-gray-800 text-xs flex-shrink-0">{t('checkout.orEnterAmount')}</h3>
         <input
           type="number"
           min="0"
           step="1000"
           value={cashReceived}
           onChange={(e) => handleCashReceivedChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder="0"
         />
       </div>
@@ -602,7 +599,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-50 rounded-2xl w-full max-w-md max-h-[95vh] overflow-y-auto">
+      <div className="bg-gray-50 rounded-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
         <div className="p-4">
           {currentStep === 'summary' && renderSummary()}
           {currentStep === 'payment' && renderPaymentMethod()}
