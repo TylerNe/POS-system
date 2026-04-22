@@ -12,24 +12,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Role must be admin or cashier' }, { status: 400 });
 
   try {
-    const { data: existing } = await supabaseAdmin.from('profiles').select('id').eq('username', username).single();
+    // 1. Kiểm tra xem username đã tồn tại chưa
+    const { data: existing } = await supabaseAdmin.from('users').select('id').eq('username', username).single();
     if (existing) return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email, password, email_confirm: true, user_metadata: { username, role },
-    });
-    if (authError) {
-      if (authError.message.includes('already registered'))
-        return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
-      throw authError;
-    }
+    // 2. Kiểm tra email
+    const { data: existingEmail } = await supabaseAdmin.from('users').select('id').eq('email', email).single();
+    if (existingEmail) return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
 
-    const user = authData.user!;
-    await supabaseAdmin.from('profiles').update({ username, role }).eq('id', user.id);
+    // 3. Chèn trực tiếp vào bảng users của bạn (Lưu mật khẩu văn bản thuần để đồng bộ với admin bạn vừa tạo)
+    const { data: newUser, error: insertError } = await supabaseAdmin.from('users').insert({
+      username,
+      email,
+      password, // Plain text
+      role
+    }).select().single();
+
+    if (insertError) throw insertError;
 
     return NextResponse.json({
       message: 'User created successfully',
-      user: { id: user.id, username, email: user.email, role, created_at: user.created_at },
+      user: { 
+        id: newUser.id, 
+        username: newUser.username, 
+        email: newUser.email, 
+        role: newUser.role, 
+        created_at: newUser.created_at 
+      },
     }, { status: 201 });
   } catch (error) {
     console.error('Register error:', error);

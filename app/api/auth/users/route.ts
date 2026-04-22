@@ -10,22 +10,20 @@ export async function GET(req: NextRequest) {
   const offset = parseInt(req.nextUrl.searchParams.get('offset') ?? '0');
 
   try {
-    const { data: profiles, error, count } = await supabaseAdmin
-      .from('profiles')
-      .select('id, username, role, created_at', { count: 'exact' })
+    const { data: users, error, count } = await supabaseAdmin
+      .from('users')
+      .select('id, username, email, role, created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    const usersWithEmail = await Promise.all(
-      (profiles ?? []).map(async (profile) => {
-        const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-        return { ...profile, email: user?.email ?? '' };
-      })
-    );
-
-    return NextResponse.json({ users: usersWithEmail, total: count ?? 0, limit, offset });
+    return NextResponse.json({ 
+      users: users ?? [], 
+      total: count ?? 0, 
+      limit, 
+      offset 
+    });
   } catch (error) {
     console.error('Get users error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -42,20 +40,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username, email, and password are required' }, { status: 400 });
 
   try {
-    const { data: existing } = await supabaseAdmin.from('profiles').select('id').eq('username', username).single();
+    // 1. Kiểm tra username tồn tại
+    const { data: existing } = await supabaseAdmin.from('users').select('id').eq('username', username).single();
     if (existing) return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email, password, email_confirm: true, user_metadata: { username, role },
-    });
-    if (authError) throw authError;
+    // 2. Chèn vào bảng users
+    const { data: newUser, error: insertError } = await supabaseAdmin.from('users').insert({
+      username,
+      email,
+      password, // Plain text
+      role
+    }).select().single();
 
-    const user = authData.user!;
-    await supabaseAdmin.from('profiles').update({ username, role }).eq('id', user.id);
+    if (insertError) throw insertError;
 
     return NextResponse.json({
       message: 'User created successfully',
-      user: { id: user.id, username, email: user.email, role, created_at: user.created_at },
+      user: { 
+        id: newUser.id, 
+        username: newUser.username, 
+        email: newUser.email, 
+        role: newUser.role, 
+        created_at: newUser.created_at 
+      },
     }, { status: 201 });
   } catch (error) {
     console.error('Create user error:', error);

@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (result instanceof NextResponse) return result;
 
   const { data: order, error } = await supabaseAdmin.from('orders').select(`
-    *, profiles!orders_user_id_fkey(username),
+    *, users!orders_user_id_fkey(username),
     order_items(id, product_id, quantity, unit_price, total_price, products(name, category))
   `).eq('id', params.id).single();
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       total: parseFloat(order.total),
       paymentMethod: order.payment_method,
       customerName: order.customer_name,
-      cashier_name: order.profiles?.username,
+      cashier_name: order.users?.username,
       metadata: order.metadata || {},
       items: (order.order_items ?? []).map((item: any) => ({
         id: item.id,

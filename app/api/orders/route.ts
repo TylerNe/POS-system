@@ -17,7 +17,7 @@ function formatOrder(order: any) {
     createdAt: order.created_at,
     updatedAt: order.updated_at,
     timestamp: order.created_at,
-    cashier_name: order.profiles?.username,
+    cashier_name: order.users?.username,
     metadata: order.metadata || {},
     items: (order.order_items ?? []).map((item: any) => ({
       id: item.id,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
   try {
     let query = supabaseAdmin.from('orders').select(`
-      *, profiles!orders_user_id_fkey(username),
+      *, users!orders_user_id_fkey(username),
       order_items(id, product_id, quantity, unit_price, total_price, products(name))
     `, { count: 'exact' }).order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: completeOrder } = await supabaseAdmin.from('orders').select(`
-      *, profiles!orders_user_id_fkey(username),
+      *, users!orders_user_id_fkey(username),
       order_items(id, product_id, quantity, unit_price, total_price, products(name))
     `).eq('id', order.id).single();
 
