@@ -9,45 +9,32 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Look up profile by username
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
+    // 1. Kiểm tra trực tiếp trong bảng 'users' của bạn
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('*')
       .eq('username', username)
+      .eq('password', password) // So sánh trực tiếp văn bản thuần như bạn đã nhập
       .single();
 
-    let email = username; // fallback: treat as email
-
-    if (profile) {
-      const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-      if (authUser?.email) email = authUser.email;
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError || !authData.user) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    const { data: fullProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('username, role')
-      .eq('id', authData.user.id)
-      .single();
+    // 2. Tạo một token giả hoặc dùng chính ID làm token để Frontend không bị lỗi
+    // (Vì chúng ta đang dùng bảng custom, không qua Supabase Auth mặc định)
+    // Sau này nếu muốn bảo mật hơn, ta sẽ tích hợp JWT sau.
+    const token = `fake-jwt-token-${user.id}`;
 
     return NextResponse.json({
       message: 'Login successful',
       user: {
-        id: authData.user.id,
-        username: fullProfile?.username ?? username,
-        email: authData.user.email,
-        role: fullProfile?.role ?? 'cashier',
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
       },
-      token: authData.session?.access_token,
-      refresh_token: authData.session?.refresh_token,
+      token: token,
     });
   } catch (error) {
     console.error('Login error:', error);

@@ -14,11 +14,30 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
   if (!token) return null;
 
   try {
+    // 1. Kiểm tra nếu là Token giả (từ bảng users)
+    if (token.startsWith('fake-jwt-token-')) {
+      const userId = token.replace('fake-jwt-token-', '');
+      const { data: user } = await supabaseAdmin
+        .from('users')
+        .select('id, username, email, role')
+        .eq('id', userId)
+        .single();
+      
+      if (!user) return null;
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      };
+    }
+
+    // 2. Dự phòng: Kiểm tra qua Supabase Auth (chuẩn cũ)
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) return null;
 
     const { data: profile } = await supabaseAdmin
-      .from('profiles')
+      .from('users')
       .select('username, role')
       .eq('id', user.id)
       .single();
