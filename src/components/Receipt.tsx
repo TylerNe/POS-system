@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';

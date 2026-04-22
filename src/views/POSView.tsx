@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { usePOSStore } from '../store';
 import { useLanguage } from '../contexts/LanguageContext';

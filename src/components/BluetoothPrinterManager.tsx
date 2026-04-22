@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Bluetooth, WifiOff, Printer, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { printerService, type BluetoothPrinterDevice } from '../services/bluetoothPrinter';

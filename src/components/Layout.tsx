@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { usePOSStore } from '../store';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ShoppingCart, Package, FileText, Settings, LogOut, User, BarChart3, Utensils } from 'lucide-react';
@@ -9,18 +11,24 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { currentView, setCurrentView } = usePOSStore();
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const navItems = [
-    { id: 'pos', label: t('navigation.pos'), icon: ShoppingCart, adminOnly: false },
-    { id: 'dashboard', label: t('navigation.dashboard'), icon: BarChart3, adminOnly: true },
-    { id: 'products', label: t('navigation.products'), icon: Package, adminOnly: true },
-    { id: 'orders', label: t('navigation.orders'), icon: FileText, adminOnly: false },
-    { id: 'kitchen', label: 'Kitchen', icon: Utensils, adminOnly: false },
-    { id: 'settings', label: t('navigation.settings'), icon: Settings, adminOnly: true },
+    { id: 'pos', href: '/pos', label: t('navigation.pos'), icon: ShoppingCart, adminOnly: false },
+    { id: 'dashboard', href: '/dashboard', label: t('navigation.dashboard'), icon: BarChart3, adminOnly: true },
+    { id: 'products', href: '/products', label: t('navigation.products'), icon: Package, adminOnly: true },
+    { id: 'orders', href: '/orders', label: t('navigation.orders'), icon: FileText, adminOnly: false },
+    { id: 'kitchen', href: '/kitchen', label: 'Kitchen', icon: Utensils, adminOnly: false },
+    { id: 'settings', href: '/settings', label: t('navigation.settings'), icon: Settings, adminOnly: true },
   ] as const;
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,12 +46,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     .filter((item) => !item.adminOnly || user?.role === 'admin')
                     .map((item) => {
                       const Icon = item.icon;
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                       return (
                         <button
                           key={item.id}
-                          onClick={() => setCurrentView(item.id)}
+                          onClick={() => router.push(item.href)}
                           className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                            currentView === item.id
+                            isActive
                               ? 'border-primary-500 text-primary-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
@@ -66,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </span>
                 </div>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex items-center text-sm text-gray-600 hover:text-gray-800"
                 >
                   <LogOut className="h-4 w-4 mr-1" />

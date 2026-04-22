@@ -1,3 +1,5 @@
+'use client'
+
 import { create } from 'zustand';
 import type { Product, CartItem, Order, PaymentMethod } from '../types';
 import { productsAPI, ordersAPI } from '../services/api';

@@ -371,4 +371,4 @@ export class MockBluetoothPrinterService implements BluetoothPrinterService {
 
 // Export the appropriate service based on environment
 export const printerService: BluetoothPrinterService = 
-  import.meta.env.DEV ? new MockBluetoothPrinterService() : bluetoothPrinterService;
+  (process.env.NODE_ENV === 'development') ? new MockBluetoothPrinterService() : bluetoothPrinterService;

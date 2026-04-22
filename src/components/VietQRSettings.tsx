@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';

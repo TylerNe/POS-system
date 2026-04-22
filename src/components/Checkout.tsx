@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react';
 import { usePOSStore } from '../store';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -144,7 +146,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
       console.error('Payment failed:', error);
       
       // For debugging, create a mock order if API fails
-      if (import.meta.env.DEV) {
+      if ((process.env.NODE_ENV === 'development')) {
         console.log('🔍 Creating mock order for development');
         const mockOrder = {
           id: `ORDER-${Date.now()}`,

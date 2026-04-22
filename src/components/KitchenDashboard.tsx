@@ -1,6 +1,9 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Clock, Utensils, CheckCircle, AlertCircle, PlayCircle, Wifi, WifiOff } from 'lucide-react';
 import { kitchenAPI } from '../services/api';
+import { subscribeToKitchenUpdates } from '../services/realtime';
 
 interface OrderItem {
   name: string;
@@ -43,132 +46,41 @@ const KitchenDashboard: React.FC = () => {
     loadOrders();
   }, []);
 
-  // Real-time updates via Server-Sent Events
+  // Real-time updates via Supabase Realtime (replaces SSE)
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      setConnectionError('No authentication token found');
-      setIsLoading(false);
-      return;
-    }
-
-    let eventSource: EventSource | null = null;
-    let reconnectTimeout: number | null = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-
-    const connectSSE = () => {
-      try {
-        console.log('Attempting to connect to SSE...');
-        
-        // Close existing connection if any
-        if (eventSource) {
-          eventSource.close();
-          eventSource = null;
+    const unsubscribe = subscribeToKitchenUpdates(
+      // New order inserted
+      (_update) => {
+        console.log('New order via Realtime:', _update.orderId);
+        loadOrders(); // Refresh orders list
+        setIsConnected(true);
+        setConnectionError(null);
+      },
+      // Order status updated
+      (update) => {
+        console.log('Status update via Realtime:', update);
+        setOrders(prev => prev.map(order =>
+          order.orderId === update.orderId
+            ? { ...order, status: update.status! }
+            : order
+        ));
+        // Fade out 'Done' orders
+        if (update.status === 'Done') {
+          setTimeout(() => {
+            setFadingOrders(prev => new Set(prev).add(update.orderId));
+          }, 1000);
         }
-
-        // Create EventSource with authentication
-        eventSource = new EventSource(`/api/kitchen/updates?token=${token}`);
-
-        eventSource.onopen = () => {
-          console.log('SSE connection opened successfully');
-          setIsConnected(true);
-          setConnectionError(null);
-          reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log('SSE message received:', data);
-            
-            switch (data.type) {
-              case 'connected':
-                console.log('Kitchen dashboard connected:', data.message);
-                break;
-              
-              case 'heartbeat':
-                console.log('Heartbeat received:', data.timestamp);
-                break;
-              
-              case 'new_order':
-                console.log('New order received:', data.order);
-                setOrders(prev => [data.order, ...prev]);
-                break;
-              
-              case 'status_update':
-                console.log('Status update received:', data);
-                setOrders(prev => prev.map(order => 
-                  order.orderId === data.orderId 
-                    ? { ...order, status: data.status }
-                    : order
-                ));
-                
-                // If status is 'Done', show completed state briefly then it will be filtered out by activeOrders
-                if (data.status === 'Done') {
-                  // Start fade-out after 1 second to show completed state
-                  setTimeout(() => {
-                    setFadingOrders(prev => new Set(prev).add(data.orderId));
-                  }, 1000);
-                }
-                break;
-              
-              default:
-                console.log('Unknown event type:', data.type);
-            }
-          } catch (error) {
-            console.error('Error parsing SSE data:', error);
-          }
-        };
-
-        eventSource.onerror = (error) => {
-          console.error('SSE connection error:', error);
-          console.error('EventSource readyState:', eventSource?.readyState);
-          
-          setIsConnected(false);
-          setConnectionError('Connection lost. Trying to reconnect...');
-          
-          // Close current connection
-          if (eventSource) {
-            eventSource.close();
-            eventSource = null;
-          }
-          
-          // Try to reconnect with exponential backoff
-          if (reconnectAttempts < maxReconnectAttempts) {
-            reconnectAttempts++;
-            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000); // Max 10 seconds
-            
-            console.log(`Reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`);
-            
-            if (reconnectTimeout) {
-              clearTimeout(reconnectTimeout);
-            }
-            reconnectTimeout = setTimeout(() => {
-              connectSSE();
-            }, delay);
-          } else {
-            setConnectionError('Failed to reconnect after multiple attempts. Please refresh the page.');
-            console.error('Max reconnect attempts reached');
-          }
-        };
-      } catch (error) {
-        console.error('Error creating EventSource:', error);
-        setIsConnected(false);
-        setConnectionError('Failed to establish connection');
+        setIsConnected(true);
+        setConnectionError(null);
       }
-    };
+    );
 
-    connectSSE();
+    setIsConnected(true);
+    setConnectionError(null);
 
     return () => {
-      console.log('Cleaning up SSE connection...');
-      if (eventSource) {
-        eventSource.close();
-      }
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
+      console.log('Cleaning up Supabase Realtime connection...');
+      unsubscribe();
       setIsConnected(false);
     };
   }, []);

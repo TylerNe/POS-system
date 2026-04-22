@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import type { User } from '../types';

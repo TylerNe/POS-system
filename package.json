@@ -1,54 +1,41 @@
 {
   "name": "pos-system",
   "private": true,
-  "version": "1.0.0",
-  "description": "Modern Point of Sale system built with React, TypeScript, and Tailwind CSS",
-  "type": "module",
+  "version": "2.0.0",
+  "description": "Modern POS System — Next.js 14 + Supabase + Vercel",
   "scripts": {
-    "dev": "vite",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "tsc -b && vite build",
-    "build:backend": "cd backend && npm install && npm run build",
-    "start": "npm run build:frontend && cd backend && npm start",
-    "postinstall": "cd backend && npm install",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "share": "npm run build && npx serve -s dist -l 3000",
-    "share-backend": "cd backend && npm start",
-    "tunnel": "npx ngrok http 3000",
-    "test-build": "npm run build && echo '✅ Build completed successfully'"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=18.17.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "@types/uuid": "^10.0.0",
     "@types/web-bluetooth": "^0.0.15",
-    "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.263.1",
-    "postcss": "^8.5.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-hot-toast": "^2.5.2",
-    "react-router-dom": "^7.8.2",
     "uuid": "^11.1.0",
     "zustand": "^5.0.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "eslint": "^9.32.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
+    "@types/node": "^20.17.50",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "typescript": "~5.8.3",
-    "typescript-eslint": "^8.39.0",
-    "vite": "^7.1.0"
+    "typescript": "~5.8.3"
   }
 }

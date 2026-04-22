@@ -1,42 +1,12 @@
-// Dynamic API configuration for different environments
-export const getApiConfig = () => {
-  // Check if we're in production (Railway, Vercel, Netlify, etc.)
-  const isProduction = import.meta.env.PROD;
-  
-  // Check if we're running on ngrok
-  const isNgrok = window.location.hostname.includes('ngrok');
-  
-  // Check if we're on Railway
-  const isRailway = window.location.hostname.includes('railway.app');
-  
-  if (isProduction || isRailway) {
-    // In production, use same origin for API calls
-    return `${window.location.origin}/api`;
+// API configuration for Next.js + Supabase + Vercel
+// API routes are served at /api/* on the same origin in both dev and prod
+
+export const getApiConfig = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  
-  if (isNgrok) {
-    // Get backend URL from localStorage or prompt user
-    const backendUrl = localStorage.getItem('backend_ngrok_url');
-    if (backendUrl) {
-      // Remove trailing slash if exists
-      const cleanUrl = backendUrl.replace(/\/$/, '');
-      return `${cleanUrl}/api`;
-    }
-    
-    // Prompt user to enter backend URL
-    const userBackendUrl = prompt(
-      'Please enter your backend ngrok URL (e.g., https://xxxx-xx-xx-xxx-xx.ngrok.io):'
-    );
-    if (userBackendUrl) {
-      // Remove trailing slash if exists
-      const cleanUrl = userBackendUrl.replace(/\/$/, '');
-      localStorage.setItem('backend_ngrok_url', cleanUrl);
-      return `${cleanUrl}/api`;
-    }
-  }
-  
-  // Default local development
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  return '/api';
 };
 
 export const API_BASE_URL = getApiConfig();
+

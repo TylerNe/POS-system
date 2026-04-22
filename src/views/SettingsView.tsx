@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Settings, Store, Receipt, Users, QrCode, DollarSign, Globe, Bluetooth } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';

@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { QrCode, Copy, CheckCircle, Clock, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -336,7 +338,7 @@ const VietQRPayment: React.FC<VietQRPaymentProps> = ({
           )}
           
           {/* Debug section - only show in development */}
-          {import.meta.env.DEV && selectedBank && (
+          {(process.env.NODE_ENV === 'development') && selectedBank && (
             <div className="mt-3 p-2 bg-gray-50 border border-gray-200 rounded">
               <p className="text-xs text-gray-700 mb-2">
                 <strong>Debug Info:</strong>
