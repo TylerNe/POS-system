@@ -20,6 +20,7 @@ interface Order {
   customerName?: string;
   customerPhone?: string;
   total: number;
+  note?: string;
 }
 
 const KitchenDashboard: React.FC = () => {
@@ -301,6 +302,14 @@ const KitchenDashboard: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Note */}
+              {order.note && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl shadow-sm">
+                  <h4 className="text-xs font-bold text-yellow-700 uppercase mb-1 tracking-wider">Ghi chú đặc biệt:</h4>
+                  <p className="text-base text-yellow-900 font-semibold leading-tight">{order.note}</p>
+                </div>
+              )}
 
               {/* Total */}
               <div className="mb-4">

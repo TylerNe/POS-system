@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     timePlaced: new Date(row.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
     items: (row.order_items ?? []).map((item: any) => ({ name: item.products?.name ?? '', quantity: parseInt(item.quantity) })),
     status: (row.metadata as any)?.kitchen_status ?? 'Pending',
+    note: (row.metadata as any)?.note || '',
     customerName: row.customer_name,
     total: parseFloat(row.total),
   }));
