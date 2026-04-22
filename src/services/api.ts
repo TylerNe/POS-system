@@ -47,14 +47,20 @@ api.interceptors.response.use(
           // Refresh failed, redirect to login
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user');
-          window.location.href = '/login';
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
           return Promise.reject(refreshError);
         }
       } else {
         // Other 401 errors, redirect to login
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        
+        // Prevent infinite reload loop if already on login page
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

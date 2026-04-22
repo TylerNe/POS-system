@@ -5,9 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LogIn, User, Lock } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 const Login: React.FC = () => {
   const { login } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -20,6 +23,7 @@ const Login: React.FC = () => {
 
     try {
       await login(formData.username, formData.password);
+      router.push('/pos');
     } catch (error) {
       // Error is handled in AuthContext
     } finally {
