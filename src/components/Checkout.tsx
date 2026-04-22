@@ -567,35 +567,36 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
         />
       </div>
 
-      {/* Total and Change */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-        <div className="flex justify-between text-lg">
-          <span className="font-medium">{t('checkout.cashReceived')}:</span>
-          <span className="font-bold">{formatCurrency(actualCashReceived)}</span>
+      {/* Total, Change and Complete Button Row */}
+      <div className="flex items-stretch space-x-3">
+        <div className="flex-1 bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="font-medium text-blue-600">{t('checkout.cashReceived')}:</span>
+            <span className="font-bold text-blue-700">{formatCurrency(actualCashReceived)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="font-medium text-blue-600">{t('checkout.change')}:</span>
+            <span className={`font-bold ${change >= 0 ? 'text-blue-700' : 'text-red-600'}`}>
+              {formatCurrency(change)}
+            </span>
+          </div>
         </div>
-        <div className="flex justify-between text-lg">
-          <span className="font-medium">{t('checkout.change')}:</span>
-          <span className={`font-bold ${change >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-            {formatCurrency(change)}
-          </span>
-        </div>
-      </div>
 
-      {/* Complete Payment Button */}
-      <button
-        onClick={handleCheckout}
-        disabled={isProcessing || actualCashReceived < total}
-        className="w-full bg-primary-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg flex items-center justify-center"
-      >
-        {isProcessing ? (
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-        ) : (
-          <>
-            <Receipt className="h-5 w-5 mr-2" />
-{t('checkout.completePayment')}
-          </>
-        )}
-      </button>
+        <button
+          onClick={handleCheckout}
+          disabled={isProcessing || actualCashReceived < total}
+          className="flex-[0.8] bg-primary-600 text-white px-4 rounded-xl font-bold text-base hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg flex flex-col items-center justify-center"
+        >
+          {isProcessing ? (
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          ) : (
+            <>
+              <Receipt className="h-5 w-5 mb-1" />
+              <span className="text-center leading-tight">{t('checkout.completePayment')}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 
