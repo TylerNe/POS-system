@@ -24,6 +24,8 @@ interface POSStore {
   getCartTotal: () => number;
   getCartSubtotal: () => number;
   getCartTax: () => number;
+  note: string;
+  setNote: (note: string) => void;
 
   // Orders
   orders: Order[];
@@ -45,6 +47,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   cart: [],
   orders: [],
   ordersLoading: false,
+  note: '',
   currentView: 'pos',
 
   // Product actions
@@ -145,7 +148,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
       cart: state.cart.filter((item) => item.product.id !== productId),
     })),
 
-  clearCart: () => set({ cart: [] }),
+  clearCart: () => set({ cart: [], note: '' }),
 
   getCartSubtotal: () => {
     const state = get();
@@ -199,9 +202,10 @@ export const usePOSStore = create<POSStore>((set, get) => ({
         customer_name: customerInfo?.name,
         customer_phone: customerInfo?.phone,
         customer_email: customerInfo?.email,
-        // Add metadata to preserve original payment method
+        // Add metadata to preserve original payment method and note
         metadata: {
-          original_payment_method: originalPaymentMethod
+          original_payment_method: originalPaymentMethod,
+          note: state.note
         }
       };
 
@@ -217,6 +221,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
       set((currentState) => ({
         orders: [orderWithOriginalMethod, ...currentState.orders],
         cart: [],
+        note: '',
       }));
 
       // Refresh products to update stock
@@ -232,5 +237,6 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   },
 
   // UI actions
+  setNote: (note) => set({ note }),
   setCurrentView: (view) => set({ currentView: view }),
 }));

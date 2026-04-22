@@ -516,34 +516,37 @@ const Checkout: React.FC<CheckoutProps> = ({ onClose, onComplete }) => {
         </div>
       </div>
 
-      {/* Denominations */}
+      {/* Denominations Grid */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <h3 className="font-semibold text-gray-800 mb-3">{t('checkout.selectDenomination')}</h3>
-        <div className="space-y-3">
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+          <DollarSign className="h-5 w-5 mr-2 text-primary-600" />
+          {t('checkout.selectDenomination')}
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
           {denominations.map((denom) => (
-            <div key={denom} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-              <span className="text-lg font-semibold">{formatDenomination(denom)}</span>
-              <div className="flex items-center space-x-3">
+            <div key={denom} className="flex flex-col items-center bg-gray-50 p-2 rounded-xl border border-gray-100">
+              <span className="text-sm font-bold text-gray-700 mb-2">{formatDenomination(denom)}</span>
+              <div className="flex items-center justify-between w-full px-1">
                 <button
                   type="button"
                   onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) - 1)}
-                  className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-lg font-bold transition-colors"
+                  className="w-8 h-8 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 font-bold shadow-sm transition-all"
                 >
                   -
                 </button>
-                <span className="w-8 text-center text-lg font-semibold">
+                <span className="text-lg font-bold text-primary-600 min-w-[24px] text-center">
                   {selectedDenominations[denom] || 0}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleDenominationChange(denom, (selectedDenominations[denom] || 0) + 1)}
-                  className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-lg font-bold transition-colors"
+                  className="w-8 h-8 bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center justify-center text-white font-bold shadow-sm transition-all"
                 >
                   +
                 </button>
-                <span className="text-sm text-gray-500 w-16 text-right font-medium">
-                  {formatCurrency((selectedDenominations[denom] || 0) * denom)}
-                </span>
+              </div>
+              <div className="mt-2 text-[10px] text-gray-400 font-medium">
+                {formatCurrency((selectedDenominations[denom] || 0) * denom)}
               </div>
             </div>
           ))}

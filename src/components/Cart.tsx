@@ -14,7 +14,9 @@ const Cart: React.FC = () => {
     clearCart,
     getCartSubtotal,
     getCartTax,
-    getCartTotal
+    getCartTotal,
+    note,
+    setNote
   } = usePOSStore();
   const { formatCurrency } = useCurrency();
   const { t } = useLanguage();
@@ -98,6 +100,17 @@ const Cart: React.FC = () => {
       </div>
 
       <div className="p-2 md:p-3 lg:p-4 border-t bg-gray-50 flex-shrink-0">
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-gray-500 mb-1">
+            Ghi chú đơn hàng:
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-primary-500 focus:border-primary-500 min-h-[60px]"
+            placeholder="Ghi chú (Bàn số, ít đường, v.v...)"
+          />
+        </div>
         <div className="space-y-1 md:space-y-2">
           <div className="flex justify-between text-xs">
             <span>{t('pos.subtotal')}:</span>
