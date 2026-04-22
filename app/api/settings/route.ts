@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ settings });
 }
 
-export async function PUT(req: NextRequest) {
+async function handleUpdate(req: NextRequest) {
   const result = await requireRole(req, ['admin']);
   if (result instanceof NextResponse) return result;
 
@@ -22,8 +22,21 @@ export async function PUT(req: NextRequest) {
   if (!key || value === undefined) return NextResponse.json({ error: 'Key and value are required' }, { status: 400 });
 
   const { data, error } = await supabaseAdmin.from('system_settings')
-    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' }).select().single();
+    .upsert({ 
+      key, 
+      value, 
+      updated_at: new Date().toISOString() 
+    });
+
   if (error) return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 
-  return NextResponse.json({ message: 'Setting updated', setting: data });
+  return NextResponse.json({ message: 'Setting updated', setting: { key, value } });
+}
+
+export async function PUT(req: NextRequest) {
+  return handleUpdate(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleUpdate(req);
 }

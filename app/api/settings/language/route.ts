@@ -9,11 +9,33 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ language: data?.value ?? DEFAULT });
 }
 
-export async function PUT(req: NextRequest) {
+async function handleUpdate(req: NextRequest) {
   const result = await requireRole(req, ['admin']);
   if (result instanceof NextResponse) return result;
+  
   const { code, name } = await req.json();
   if (!code || !name) return NextResponse.json({ error: 'Code and name are required' }, { status: 400 });
-  await supabaseAdmin.from('system_settings').upsert({ key: 'language', value: { code, name }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+  const { error } = await supabaseAdmin
+    .from('system_settings')
+    .upsert({ 
+      key: 'language', 
+      value: { code, name }, 
+      updated_at: new Date().toISOString() 
+    });
+
+  if (error) {
+    console.error('Update language error:', error);
+    return NextResponse.json({ error: 'Failed to update database' }, { status: 500 });
+  }
+
   return NextResponse.json({ message: 'Language updated', language: { code, name } });
+}
+
+export async function PUT(req: NextRequest) {
+  return handleUpdate(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleUpdate(req);
 }

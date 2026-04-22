@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export async function PUT(
+async function handleStatusUpdate(
   req: NextRequest,
-  { params }: { params: { orderId: string } }
+  orderId: string
 ) {
   const result = await requireAuth(req);
   if (result instanceof NextResponse) return result;
@@ -15,13 +15,33 @@ export async function PUT(
   }
 
   const { data: current, error: fetchError } = await supabaseAdmin
-    .from('orders').select('metadata').eq('id', params.orderId).single();
+    .from('orders').select('metadata').eq('id', orderId).single();
   if (fetchError || !current) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
   const { data, error } = await supabaseAdmin.from('orders')
-    .update({ metadata: { ...(current.metadata as object ?? {}), kitchen_status: status }, updated_at: new Date().toISOString() })
-    .eq('id', params.orderId).select().single();
+    .update({ 
+      metadata: { ...(current.metadata as object ?? {}), kitchen_status: status }, 
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', orderId)
+    .select()
+    .single();
+
   if (error) return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 
   return NextResponse.json({ message: 'Status updated', order: data });
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { orderId: string } }
+) {
+  return handleStatusUpdate(req, params.orderId);
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { orderId: string } }
+) {
+  return handleStatusUpdate(req, params.orderId);
 }
