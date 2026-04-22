@@ -9,11 +9,33 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ currency: data?.value ?? DEFAULT });
 }
 
-export async function PUT(req: NextRequest) {
+async function handleUpdate(req: NextRequest) {
   const result = await requireRole(req, ['admin']);
   if (result instanceof NextResponse) return result;
+  
   const { code, symbol, name } = await req.json();
   if (!code || !symbol || !name) return NextResponse.json({ error: 'Code, symbol, and name are required' }, { status: 400 });
-  await supabaseAdmin.from('system_settings').upsert({ key: 'currency', value: { code, symbol, name }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+  const { error } = await supabaseAdmin
+    .from('system_settings')
+    .upsert({ 
+      key: 'currency', 
+      value: { code, symbol, name }, 
+      updated_at: new Date().toISOString() 
+    });
+
+  if (error) {
+    console.error('Update currency error:', error);
+    return NextResponse.json({ error: 'Failed to update database' }, { status: 500 });
+  }
+
   return NextResponse.json({ message: 'Currency updated', currency: { code, symbol, name } });
+}
+
+export async function PUT(req: NextRequest) {
+  return handleUpdate(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleUpdate(req);
 }
